@@ -7,6 +7,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProductFeedModule } from './modules/product-feed/product-feed.module';
 import { SharedModule } from './shared/shared.module';
+import { CatalogIntegrationModule } from './modules/catalog-integration/catalog-integration.module';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { SharedModule } from './shared/shared.module';
     ScheduleModule.forRoot(),
     SharedModule,
     TenantModule,
-    // CatalogIntegrationModule,
+    CatalogIntegrationModule,
     ProductFeedModule,
     // FeedSyncJobModule,
   ],

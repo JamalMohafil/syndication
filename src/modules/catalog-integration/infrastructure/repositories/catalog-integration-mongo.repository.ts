@@ -7,7 +7,7 @@ import { CatalogIntegrationDocument, CatalogIntegrationName } from '../schemas/c
 import { PlatformType } from '../../domain/enums/platform-type.enum';
 
 @Injectable()
-export class CatalogIntegrationMongoRepository extends CatalogIntegrationRepository {
+export class MongoCatalogIntegrationRepository extends CatalogIntegrationRepository {
   constructor(
     @InjectModel(CatalogIntegrationName)
     private readonly catalogIntegrationModel: Model<CatalogIntegrationDocument>,

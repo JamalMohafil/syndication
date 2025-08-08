@@ -22,19 +22,17 @@ export class CatalogIntegrationService {
     authCode: string,
   ): Promise<CatalogIntegrationEntity> {
     try {
-      // Get tokens from Google
+     
       const tokenResponse =
         await this.googleOAuthService.getTokensFromCode(authCode);
 
-      // Get merchant center accounts
       const merchantAccounts =
         await this.googleMerchantService.getMerchantCenterAccounts(
           tokenResponse.access_token,
         );
-      const primaryAccount = merchantAccounts[0]; // Take first account for now
+      const primaryAccount = merchantAccounts[0];  
 
-      // Create or update integration
-      let existingIntegration =
+       let existingIntegration =
         await this.catalogIntegrationRepository.findByTenantAndPlatform(
           tenantId,
           PlatformType.GOOGLE,

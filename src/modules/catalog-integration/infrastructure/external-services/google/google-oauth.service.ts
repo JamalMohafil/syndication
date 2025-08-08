@@ -21,11 +21,12 @@ export class GoogleOAuthService {
     );
   }
 
-  generateAuthUrl(scopes: string[]): string {
+  generateAuthUrl(scopes: string[], state: string): string {
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
       prompt: 'consent',
+      state: state,
     });
   }
 

@@ -39,6 +39,21 @@ export class GoogleMerchantService {
     }
   }
 
+  async getProducts(accessToken: string, merchantId: string): Promise<any[]> {
+    this.googleOAuthService.setCredentials(accessToken);
+    const content = google.content({
+      version: 'v2.1',
+      auth: this.googleOAuthService.getAuthClient(),
+    });
+
+    try {
+      const response = await content.products.list({ merchantId });
+      return response.data.resources || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch products: ${error.message}`);
+    }
+  }
+
   async uploadProductFeed(
     accessToken: string,
     merchantId: string,
