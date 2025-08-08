@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { TenantService } from 'src/modulus/tenant/application/services/tenant.service';
+import { TenantService } from 'src/modules/tenant/application/services/tenant.service';
 
 @Injectable()
 export class SeedDataService implements OnModuleInit {
