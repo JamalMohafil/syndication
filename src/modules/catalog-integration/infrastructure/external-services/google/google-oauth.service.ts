@@ -1,28 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
-
-export interface GoogleTokenResponse {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  token_type: string;
-}
-
-export interface MerchantAccount {
-  id: string;
-  name: string;
-  websiteUrl?: string;
-  adultContent?: boolean;
-  kind?: string;
-}
-
-export interface AuthInfo {
-  accountIdentifiers: Array<{
-    merchantId: string;
-    aggregatorId?: string;
-  }>;
-}
+import { MerchantAccount } from './types/merchant-account.type';
+import { AuthInfo } from './types/auth-info.type';
+import { GoogleTokenResponse } from './types/google-token-response.type';
 
 @Injectable()
 export class GoogleOAuthService {

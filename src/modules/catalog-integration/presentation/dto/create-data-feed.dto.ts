@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDataFeedDto {
   @ApiProperty({
@@ -12,11 +12,4 @@ export class CreateDataFeedDto {
     example: 'https://yourstore.com/api/v1/feeds/google-feed-123.xml',
   })
   feedUrl: string;
-
-  @ApiProperty({
-    description: 'Merchant ID (for Google)',
-    example: '12345678',
-    required: false,
-  })
-  merchantId?: string;
 }

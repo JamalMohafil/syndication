@@ -6,6 +6,9 @@ import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-
 import { MetaOAuthService } from '../../infrastructure/external-services/meta/meta-oauth.service';
 import { CatalogIntegrationService } from '../../application/services/catalog-integration.service';
 import { TenantAuthGuard } from '../../infrastructure/guards/tenant-auth.guard';
+import { GetBusinessAccountsUseCase } from '../../application/use-cases/meta/get-business-accounts.use-case';
+import { GetMetaIntegrationUseCase } from '../../application/use-cases/meta/get-meta-integration.use-case';
+import { GetMetaCatalogsUseCase } from '../../application/use-cases/meta/get-meta-catalogs.use-case';
 
 @ApiTags('Meta Integration')
 @Controller('meta')
@@ -13,8 +16,9 @@ import { TenantAuthGuard } from '../../infrastructure/guards/tenant-auth.guard';
 @UseGuards(TenantAuthGuard)
 export class MetaIntegrationController {
   constructor(
-    private readonly catalogIntegrationService: CatalogIntegrationService,
-    private readonly metaOAuthService: MetaOAuthService,
+    private readonly getBusinessAccountsUseCase: GetBusinessAccountsUseCase,
+    private readonly getMetaIntegrationUseCase: GetMetaIntegrationUseCase,
+    private readonly getMetaCatalogsUseCase: GetMetaCatalogsUseCase,
   ) {}
 
   @Get('business/accounts')
@@ -24,11 +28,10 @@ export class MetaIntegrationController {
   })
   async getBusinessAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
-    const integration = await this.getMetaIntegration(tenantId);
-
-    return await this.metaOAuthService.getBusinessAccounts(
-      integration.accessToken,
-    );
+    const res = await this.getBusinessAccountsUseCase.execute({
+      tenantId,
+    });
+    return res;
   }
 
   @Get('catalogs')
@@ -38,23 +41,15 @@ export class MetaIntegrationController {
   })
   async getCatalogs(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
-    const integration = await this.getMetaIntegration(tenantId);
 
-    // Implement Meta catalog service method
-    return { message: 'Meta catalogs endpoint - implement MetaCatalogService' };
+    const res = await this.getMetaCatalogsUseCase.execute({ tenantId });
+
+    return { message: 'Meta catalogs endpoint - بدنا نعمل MetaCatalogService' };
   }
 
   private async getMetaIntegration(tenantId: string) {
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-    const metaIntegration = integrations.find(
-      (int) => int.platform === PlatformType.META,
-    );
+    const res = await this.getMetaIntegrationUseCase.execute({ tenantId });
 
-    if (!metaIntegration) {
-      throw new NotFoundDomainException('Meta integration not found');
-    }
-
-    return metaIntegration;
+    return res;
   }
 }

@@ -82,8 +82,18 @@ export class CatalogIntegrationEntity extends BaseEntity {
     this.updateTimestamp();
   }
 
+  isActive(): boolean {
+    return (
+      this._status === IntegrationStatus.CONNECTED && !this.isTokenExpired()
+    );
+  }
   setPlatformConfigs(configs: Record<string, any>): void {
     this._platformConfigs = { ...this._platformConfigs, ...configs };
+    this.updateTimestamp();
+  }
+
+  disconnect(): void {
+    this._status = IntegrationStatus.DISCONNECTED;
     this.updateTimestamp();
   }
 

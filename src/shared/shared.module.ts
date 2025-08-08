@@ -6,15 +6,37 @@ import { ConfigModule } from '@nestjs/config';
 import metaConfig from './infrastructure/config/meta.config';
 import googleConfig from './infrastructure/config/google.config';
 import appConfig from './infrastructure/config/app.config';
+import { RedisService } from './infrastructure/database/redis/redis.service';
+import redisConfig from './infrastructure/database/redis/config/redis.config';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [appConfig, metaConfig, googleConfig],
+      load: [appConfig, metaConfig, googleConfig, redisConfig],
       isGlobal: true,
     }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT as unknown as number,
+        username: process.env.REDIS_USERNAME,
+        password: process.env.REDIS_PASSWORD,
+      },
+    }),
+  
   ],
-  providers: [GoogleOAuthService, GoogleMerchantService, MetaOAuthService],
-  exports: [GoogleOAuthService, GoogleMerchantService, MetaOAuthService],
+  providers: [
+    GoogleOAuthService,
+    RedisService,
+    GoogleMerchantService,
+    MetaOAuthService,
+  ],
+  exports: [
+    GoogleOAuthService,
+    RedisService,
+    GoogleMerchantService,
+    MetaOAuthService,
+  ],
 })
 export class SharedModule {}

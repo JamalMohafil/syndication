@@ -8,6 +8,7 @@ import {
   Req,
   HttpStatus,
   UseGuards,
+  HttpException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,11 @@ import { IntegrationResponseDto } from '../responses/integration.response';
 import { IntegrationSummaryDto } from '../dto/integration-summary.dto';
 import { PlatformStatusDto } from '../dto/platform-status.dto';
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
+import { GetIntergrationsUseCase } from '../../application/use-cases/integration/get-integrations.use-case';
+import { GetPlatformIntegrationUseCase } from '../../application/use-cases/integration/get-platform-integration.use-case';
+import { DisconnectIntegrationUseCase } from '../../application/use-cases/integration/disconnect-integration.use-case';
+import { GetIntegrationSummaryUseCase } from '../../application/use-cases/integration/get-integration-summary.use-case';
+import { RefreshExpiredTokensUseCase } from '../../application/use-cases/integration/refresh-expired-tokens.use-case';
 
 @ApiTags('Integration Management')
 @Controller('integrations')
@@ -31,7 +37,11 @@ import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-
 @UseGuards(TenantAuthGuard)
 export class IntegrationController {
   constructor(
-    private readonly catalogIntegrationService: CatalogIntegrationService,
+    private readonly getIntergrationsUseCase: GetIntergrationsUseCase,
+    private readonly getPlatformIntegrationUseCase: GetPlatformIntegrationUseCase,
+    private readonly disconnectIntegrationUseCase: DisconnectIntegrationUseCase,
+    private readonly getIntegrationSummaryUseCase: GetIntegrationSummaryUseCase,
+    private readonly refreshExpiredTokensUseCase: RefreshExpiredTokensUseCase,
   ) {}
 
   @Get()
@@ -49,12 +59,8 @@ export class IntegrationController {
     @Req() req: FastifyRequest,
   ): Promise<IntegrationResponseDto[]> {
     const tenantId = (req as any).tenantId;
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-
-    return integrations.map((integration) =>
-      this.mapToResponseDto(integration),
-    );
+    const res = await this.getIntergrationsUseCase.execute({ tenantId });
+    return res.map((integration) => this.mapToResponseDto(integration));
   }
 
   @Get(':platform')
@@ -80,19 +86,12 @@ export class IntegrationController {
     const tenantId = (req as any).tenantId;
     const platformType = platform.toUpperCase() as PlatformType;
 
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-    const integration = integrations.find(
-      (int) => int.platform === platformType,
-    );
+    const res = await this.getPlatformIntegrationUseCase.execute({
+      tenantId,
+      platform: platformType,
+    });
 
-    if (!integration) {
-      throw new NotFoundDomainException(
-        `Integration not found for platform: ${platform}`,
-      );
-    }
-
-    return this.mapToResponseDto(integration);
+    return this.mapToResponseDto(res);
   }
 
   @Delete(':platform')
@@ -114,13 +113,16 @@ export class IntegrationController {
   async disconnectIntegration(
     @Param('platform') platform: string,
     @Req() req: FastifyRequest,
-  ): Promise<void> {
+  ): Promise<any> {
     const tenantId = (req as any).tenantId;
     const platformType = platform.toUpperCase() as PlatformType;
-
-    await this.catalogIntegrationService.disconnectIntegration(
+    await this.disconnectIntegrationUseCase.execute({
       tenantId,
-      platformType,
+      platform: platformType,
+    });
+    return new HttpException(
+      'Platform integration disconnected',
+      HttpStatus.CREATED,
     );
   }
 
@@ -138,41 +140,9 @@ export class IntegrationController {
   async getIntegrationStatus(
     @Req() req: FastifyRequest,
   ): Promise<IntegrationSummaryDto> {
-    const tenantId = (req as any).tenantId;
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-
-    const platforms: PlatformStatusDto[] = Object.values(PlatformType).map(
-      (platform) => {
-        const integration = integrations.find(
-          (int) => int.platform === platform,
-        );
-        return {
-          platform: platform as PlatformType,
-          connected: !!integration,
-          status: integration?.status || 'NOT_CONNECTED',
-          tokenExpired: integration?.isTokenExpired() || false,
-          lastSync: integration?.updatedAt,
-        };
-      },
-    );
-
-    const nextTokenRefresh = integrations
-      .filter((int) => int.tokenExpiresAt)
-      .sort(
-        (a, b) =>
-          (a.tokenExpiresAt?.getTime() || 0) -
-          (b.tokenExpiresAt?.getTime() || 0),
-      )[0]?.tokenExpiresAt;
-
-    return {
-      totalIntegrations: integrations.length,
-      activeIntegrations: integrations.filter(
-        (int) => int.status === 'CONNECTED',
-      ).length,
-      platforms,
-      nextTokenRefresh,
-    };
+    return await this.getIntegrationSummaryUseCase.execute({
+      tenantId: (req as any).tenantId,
+    });
   }
 
   @Post('refresh-tokens')
@@ -185,8 +155,7 @@ export class IntegrationController {
     description: 'Token refresh completed',
   })
   async refreshTokens() {
-    await this.catalogIntegrationService.refreshExpiredTokens();
-    return { message: 'Token refresh completed' };
+    return await this.refreshExpiredTokensUseCase.execute();
   }
 
   private mapToResponseDto(integration: any): IntegrationResponseDto {

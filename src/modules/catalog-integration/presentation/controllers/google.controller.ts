@@ -17,6 +17,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TenantAuthGuard } from '../../infrastructure/guards/tenant-auth.guard';
 import { CatalogIntegrationService } from '../../application/services/catalog-integration.service';
 import { GoogleOAuthService } from '../../infrastructure/external-services/google/google-oauth.service';
+import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
+import { CreateDataFeedUseCase } from '../../application/use-cases/google/create-data-feed.use-case';
+import { GetGoogleProductsUseCase } from '../../application/use-cases/google/get-google-products.use-case';
 
 @ApiTags('Google Integration')
 @Controller('google')
@@ -24,9 +27,9 @@ import { GoogleOAuthService } from '../../infrastructure/external-services/googl
 @UseGuards(TenantAuthGuard)
 export class GoogleIntegrationController {
   constructor(
-    private readonly catalogIntegrationService: CatalogIntegrationService,
-    private readonly googleMerchantService: GoogleMerchantService,
-    private readonly googleOAuthService: GoogleOAuthService,
+    private readonly getMerchantAccountsUseCase: GetMerchantAccountsUseCase,
+    private readonly createDataFeedUseCase: CreateDataFeedUseCase,
+    private readonly getGoogleProductsUseCase: GetGoogleProductsUseCase,
   ) {}
 
   @Get('merchant/accounts')
@@ -36,17 +39,9 @@ export class GoogleIntegrationController {
   })
   async getMerchantAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
-    const integration = await this.getGoogleIntegration(tenantId);
 
-    // Set credentials for the Google OAuth service
-    this.googleOAuthService.setCredentials(
-      integration.accessToken,
-      integration.refreshToken,
-    );
-
-    return await this.googleMerchantService.getMerchantCenterAccounts(
-      integration.accessToken,
-    );
+    const res = await this.getMerchantAccountsUseCase.execute({ tenantId });
+    return res;
   }
 
   @Post('datafeed')
@@ -59,24 +54,13 @@ export class GoogleIntegrationController {
     @Req() req: FastifyRequest,
   ) {
     const tenantId = (req as any).tenantId;
-    const integration = await this.getGoogleIntegration(tenantId);
 
-    const merchantId = createFeedDto.merchantId || integration.externalId;
-    if (!merchantId) {
-      throw new BadRequestDomainException('Merchant ID is required');
-    }
-
-    this.googleOAuthService.setCredentials(
-      integration.accessToken,
-      integration.refreshToken,
-    );
-
-    return await this.googleMerchantService.createDataFeed(
-      integration.accessToken,
-      merchantId,
-      createFeedDto.feedName,
-      createFeedDto.feedUrl,
-    );
+    const res = await this.createDataFeedUseCase.execute({
+      feedName: createFeedDto.feedName,
+      feedUrl: createFeedDto.feedUrl,
+      tenantId,
+    });
+    return res;
   }
 
   @Get('products')
@@ -89,36 +73,11 @@ export class GoogleIntegrationController {
     @Query('merchantId') merchantId?: string,
   ) {
     const tenantId = (req as any).tenantId;
-    const integration = await this.getGoogleIntegration(tenantId);
 
-    const finalMerchantId = merchantId || integration.externalId;
-    if (!finalMerchantId) {
-      throw new BadRequestDomainException('Merchant ID is required');
-    }
-
-    // Set credentials
-    this.googleOAuthService.setCredentials(
-      integration.accessToken,
-      integration.refreshToken,
-    );
-
-    return await this.googleMerchantService.getProducts(
-      integration.accessToken,
-      finalMerchantId,
-    );
-  }
-
-  private async getGoogleIntegration(tenantId: string) {
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-    const googleIntegration = integrations.find(
-      (int) => int.platform === PlatformType.GOOGLE,
-    );
-
-    if (!googleIntegration) {
-      throw new NotFoundDomainException('Google integration not found');
-    }
-
-    return googleIntegration;
+    const res = await this.getGoogleProductsUseCase.execute({
+      tenantId,
+      merchantId,
+    });
+    return res;
   }
 }

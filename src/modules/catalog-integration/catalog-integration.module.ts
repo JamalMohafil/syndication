@@ -11,13 +11,57 @@ import { IntegrationController } from './presentation/controllers/integration.co
 import { MetaIntegrationController } from './presentation/controllers/meta.controller';
 import { GoogleIntegrationController } from './presentation/controllers/google.controller';
 import { OAuthController } from './presentation/controllers/oauth.controller';
-import { GoogleAdsService } from './infrastructure/external-services/google/google-ads.service';
+import { GenerateAuthUrlUseCase } from './application/use-cases/auth/generate-auth-url.use-case';
+import { GetMerchantAccountsUseCase } from './application/use-cases/google/get-merchant-accounts.use-case';
+import { RefreshTokensUseCase } from './application/use-cases/auth/refresh-tokens.use-case';
+import { TestConnectionUseCase } from './application/use-cases/auth/test-connection.use-case';
+import { GetIntergrationsUseCase } from './application/use-cases/integration/get-integrations.use-case';
+import { SetupMerchantAccountUseCase } from './application/use-cases/google/setup-merchant-account.use-case';
+import { HandleOAuthCallbackUseCase } from './application/use-cases/auth/handle-oauth-callback.use-case';
+import { GetMetaCatalogsUseCase } from './application/use-cases/meta/get-meta-catalogs.use-case';
+import { GetBusinessAccountsUseCase } from './application/use-cases/meta/get-business-accounts.use-case';
+import { GetMetaIntegrationUseCase } from './application/use-cases/meta/get-meta-integration.use-case';
+import { ConnectPlatformUseCase } from './application/use-cases/auth/connect-platform.use-case';
+import { CreateDataFeedUseCase } from './application/use-cases/google/create-data-feed.use-case';
+import { GetGoogleProductsUseCase } from './application/use-cases/google/get-google-products.use-case';
+import { GetPlatformIntegrationUseCase } from './application/use-cases/integration/get-platform-integration.use-case';
+import { DisconnectIntegrationUseCase } from './application/use-cases/integration/disconnect-integration.use-case';
+import { GetIntegrationSummaryUseCase } from './application/use-cases/integration/get-integration-summary.use-case';
+import { RefreshExpiredTokensUseCase } from './application/use-cases/integration/refresh-expired-tokens.use-case';
+import { GetTenantIntegrationsUseCase } from './application/use-cases/integration/get-tenant-integrations.use-case';
+import { TokenRefreshScheduler } from './infrastructure/schedulers/token-refresh.scheduler';
+import { TokenRefreshProcessor } from './infrastructure/processors/token-refresh.processor';
+import { BullModule } from '@nestjs/bullmq';
 
+const useCases = [
+  GenerateAuthUrlUseCase,
+  GetMerchantAccountsUseCase,
+  RefreshTokensUseCase,
+  TestConnectionUseCase,
+  GetIntergrationsUseCase,
+  SetupMerchantAccountUseCase,
+  HandleOAuthCallbackUseCase,
+  GetMetaCatalogsUseCase,
+  GetBusinessAccountsUseCase,
+  GetMetaIntegrationUseCase,
+  GetGoogleProductsUseCase,
+  GetPlatformIntegrationUseCase,
+  DisconnectIntegrationUseCase,
+  GetIntegrationSummaryUseCase,
+  RefreshExpiredTokensUseCase,
+  GetTenantIntegrationsUseCase,
+
+  ConnectPlatformUseCase,
+  CreateDataFeedUseCase,
+];
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: 'catalog_integration', schema: CatalogIntegrationSchema },
     ]),
+    BullModule.registerQueue({
+      name: 'refresh-tokens-job',
+    }),
   ],
   controllers: [
     IntegrationController,
@@ -27,8 +71,10 @@ import { GoogleAdsService } from './infrastructure/external-services/google/goog
   ],
   providers: [
     GoogleOAuthService,
-    GoogleAdsService,
     CatalogIntegrationService,
+    TokenRefreshScheduler,
+    TokenRefreshProcessor,
+    ...useCases,
     {
       provide: CatalogIntegrationRepository,
       useClass: MongoCatalogIntegrationRepository,
@@ -37,11 +83,13 @@ import { GoogleAdsService } from './infrastructure/external-services/google/goog
     GoogleMerchantService,
   ],
   exports: [
-    GoogleAdsService,
     GoogleOAuthService,
     MetaOAuthService,
     GoogleMerchantService,
+    ...useCases,
     CatalogIntegrationService,
+    TokenRefreshProcessor,
+    TokenRefreshScheduler,
   ],
 })
 export class CatalogIntegrationModule {}

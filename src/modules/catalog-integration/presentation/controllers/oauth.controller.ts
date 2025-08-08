@@ -33,15 +33,23 @@ import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-requ
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { ConnectIntegrationDto } from '../dto/connect-integration.dto';
 import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
+import { GenerateAuthUrlUseCase } from '../../application/use-cases/auth/generate-auth-url.use-case';
+import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
+import { SetupMerchantAccountUseCase } from '../../application/use-cases/google/setup-merchant-account.use-case';
+import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
+import { ConnectPlatformUseCase } from '../../application/use-cases/auth/connect-platform.use-case';
+import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
 
 @ApiTags('OAuth Authentication')
 @Controller('oauth')
 export class OAuthController {
   constructor(
-    private readonly catalogIntegrationService: CatalogIntegrationService,
-    private readonly googleOAuthService: GoogleOAuthService,
-    private readonly metaOAuthService: MetaOAuthService,
-    private readonly googleMerchantService: GoogleMerchantService,
+    private readonly getAuthUrlUseCase: GenerateAuthUrlUseCase,
+    private readonly getGoogleMerchantAccountsUseCase: GetMerchantAccountsUseCase,
+    private readonly setupMerchantAccountUseCase: SetupMerchantAccountUseCase,
+    private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
+    private readonly connectPlatformUseCase: ConnectPlatformUseCase,
+    private readonly testConnectionUseCase: TestConnectionUseCase,
   ) {}
 
   @Get('auth-url/:platform')
@@ -65,37 +73,15 @@ export class OAuthController {
     @Param('platform') platform: string,
     @Query('tenantId') tenantId: string,
   ): Promise<AuthUrlResponseDto> {
-    const platformType = platform.toUpperCase() as PlatformType;
-
-    let authUrl: string;
-    let scopes: string[];
-
-    switch (platformType) {
-      case PlatformType.GOOGLE:
-        scopes = [
-          'https://www.googleapis.com/auth/content',
-          'https://www.googleapis.com/auth/userinfo.email',
-        ];
-        authUrl = this.googleOAuthService.generateAuthUrl(scopes, tenantId);
-        break;
-      case PlatformType.META:
-        scopes = [
-          'catalog_management',
-          'business_management',
-          'ads_management',
-        ];
-        authUrl = this.metaOAuthService.generateAuthUrl(scopes);
-        break;
-      default:
-        throw new BadRequestDomainException(
-          `Unsupported platform: ${platform}`,
-        );
-    }
+    const response = await this.getAuthUrlUseCase.execute({
+      platform: platform.toUpperCase() as PlatformType,
+      tenantId,
+    });
 
     return {
-      authUrl,
-      platform: platformType,
-      scopes,
+      authUrl: response.authUrl,
+      platform: response.platform,
+      scopes: response.scopes,
     };
   }
 
@@ -109,24 +95,12 @@ export class OAuthController {
   async getGoogleMerchantAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
 
-    const integration =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-    const googleIntegration = integration.find(
-      (int) => int.platform === PlatformType.GOOGLE,
-    );
-
-    if (!googleIntegration) {
-      throw new NotFoundDomainException('Google integration not found');
-    }
-
-    const merchantAccounts =
-      await this.googleMerchantService.getUserMerchantAccounts(
-        googleIntegration.accessToken,
-      );
-
+    const response = await this.getGoogleMerchantAccountsUseCase.execute({
+      tenantId,
+    });
     return {
-      merchantAccounts,
-      hasAccess: merchantAccounts.length > 0,
+      merchantAccounts: response,
+      hasAccess: response.length > 0,
     };
   }
 
@@ -135,48 +109,21 @@ export class OAuthController {
     summary: 'Setup Google Merchant Center account',
     description: 'Configure the merchant center account to use for shopping',
   })
-  @ApiBearerAuth()
-  @UseGuards(TenantAuthGuard)
   async setupGoogleMerchant(
     @Body() body: { merchantId: string },
     @Req() req: FastifyRequest,
   ) {
     const tenantId = (req as any).tenantId;
 
-    const result =
-      await this.catalogIntegrationService.setupGoogleMerchantAccount(
-        tenantId,
-        body.merchantId,
-      );
+    const result = await this.setupMerchantAccountUseCase.execute({
+      tenantId,
+      merchantId: body.merchantId,
+    });
 
     return {
       success: true,
       integration: this.mapToResponseDto(result.integration),
       accountInfo: result.accountInfo,
-    };
-  }
-
-  @Post('google/setup-ads')
-  @ApiOperation({
-    summary: 'Setup Google Ads account',
-    description: 'Configure the Google Ads customer ID for advertising',
-  })
-  @ApiBearerAuth()
-  @UseGuards(TenantAuthGuard)
-  async setupGoogleAds(
-    @Body() body: { customerId: string },
-    @Req() req: FastifyRequest,
-  ) {
-    const tenantId = (req as any).tenantId;
-
-    const result = await this.catalogIntegrationService.setupGoogleAdsAccount(
-      tenantId,
-      body.customerId,
-    );
-
-    return {
-      success: true,
-      integration: this.mapToResponseDto(result.integration),
     };
   }
 
@@ -195,57 +142,29 @@ export class OAuthController {
     @Query('code') code: string,
     @Query('state') tenantId: string,
     @Query('error') error: string,
-    @Res() reply: FastifyReply, // Use @Res() decorator to inject FastifyReply
+    @Res() reply: FastifyReply,
   ) {
     const platformType = platform.toUpperCase() as PlatformType;
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-    try {
-      if (error) {
-        return reply.redirect(
-          `${frontendUrl}/integrations/error?message=${encodeURIComponent(error)}`,
-        );
-      }
+    const result = await this.handleOAuthCallbackUseCase.execute({
+      platform: platformType,
+      code,
+      tenantId,
+      error,
+    });
 
-      if (!code || !tenantId) {
-        return reply.redirect(
-          `${frontendUrl}/integrations/error?message=Missing authorization code or tenant ID`,
-        );
-      }
-
-      let integration;
-
-      switch (platformType) {
-        case PlatformType.GOOGLE:
-          integration =
-            await this.catalogIntegrationService.connectGoogleIntegration(
-              tenantId,
-              code,
-            );
-          break;
-        case PlatformType.META:
-          integration =
-            await this.catalogIntegrationService.connectMetaIntegration(
-              tenantId,
-              code,
-            );
-          break;
-        default:
-          throw new BadRequestDomainException(
-            `Unsupported platform: ${platformType}`,
-          );
-      }
-
+    if (!result.success) {
       return reply.redirect(
-        `${frontendUrl}/integrations/success?platform=${platformType.toLowerCase()}&id=${integration.id}`,
-      );
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      // Redirect to error page
-      return reply.redirect(
-        `${frontendUrl}/integrations/error?message=${encodeURIComponent(error.message)}`,
+        `${frontendUrl}/integrations/error?message=${encodeURIComponent(
+          result.errorMessage || 'Unknown error',
+        )}`,
       );
     }
+
+    return reply.redirect(
+      `${frontendUrl}/integrations/success?platform=${platform.toLowerCase()}&id=${result.integrationId}`,
+    );
   }
 
   @Post('connect')
@@ -262,33 +181,11 @@ export class OAuthController {
   ): Promise<IntegrationResponseDto> {
     const tenantId = (req as any).tenantId;
 
-    let integration;
-
-    switch (connectDto.platform) {
-      case PlatformType.GOOGLE:
-        // Get tokens first using your service
-        const googleTokens = await this.googleOAuthService.getTokensFromCode(
-          connectDto.authCode,
-        );
-        integration =
-          await this.catalogIntegrationService.connectGoogleIntegration(
-            tenantId,
-            connectDto.authCode,
-            // googleTokens,
-          );
-        break;
-      case PlatformType.META:
-        integration =
-          await this.catalogIntegrationService.connectMetaIntegration(
-            tenantId,
-            connectDto.authCode,
-          );
-        break;
-      default:
-        throw new BadRequestDomainException(
-          `Unsupported platform: ${connectDto.platform}`,
-        );
-    }
+    const integration = await this.connectPlatformUseCase.execute({
+      tenantId,
+      platform: connectDto.platform,
+      authCode: connectDto.authCode,
+    });
 
     return this.mapToResponseDto(integration);
   }
@@ -307,56 +204,16 @@ export class OAuthController {
     const tenantId = (req as any).tenantId;
     const platformType = platform.toUpperCase() as PlatformType;
 
-    const integrations =
-      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
-    const integration = integrations.find(
-      (int) => int.platform === platformType,
-    );
+    const result = await this.testConnectionUseCase.execute({
+      tenantId,
+      platform: platformType,
+    });
 
-    if (!integration) {
-      throw new NotFoundDomainException(
-        `Integration not found for platform: ${platform}`,
-      );
-    }
-
-    try {
-      let accountInfo: any = {};
-
-      if (platformType === PlatformType.GOOGLE) {
-        // Set credentials and test connection
-        this.googleOAuthService.setCredentials(
-          integration.accessToken,
-          integration.refreshToken,
-        );
-        const authClient = this.googleOAuthService.getAuthClient();
-
-        // Test by getting user info
-        const { google } = require('googleapis');
-        const oauth2 = google.oauth2({ version: 'v2', auth: authClient });
-        const { data } = await oauth2.userinfo.get();
-
-        accountInfo = {
-          id: data.id,
-          email: data.email,
-          name: data.name,
-        };
-      } else if (platformType === PlatformType.META) {
-        // Test Meta connection
-        accountInfo = await this.metaOAuthService.getBusinessAccounts(
-          integration.accessToken,
-        );
-      }
-
-      return {
-        success: true,
-        message: 'Connection successful',
-        accountInfo,
-      };
-    } catch (error) {
-      throw new BadRequestDomainException(
-        `Connection test failed: ${error.message}`,
-      );
-    }
+    return {
+      success: result.isConnected,
+      message: result.message,
+      accountInfo: result.details,
+    };
   }
 
   private mapToResponseDto(integration: any): IntegrationResponseDto {

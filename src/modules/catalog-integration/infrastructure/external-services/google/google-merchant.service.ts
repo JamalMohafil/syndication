@@ -1,26 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { GoogleOAuthService } from './google-oauth.service';
-
-export interface MerchantCenterAccount {
-  id: string;
-  name: string;
-  websiteUrl: string;
-  adultContent: boolean;
-}
-
-export interface GoogleUserInfo {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-}
+import { MerchantCenterAccount } from './types/merchant-center-account.type';
+import { GoogleUserInfo } from './types/google-user-info.type';
+import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 
 @Injectable()
 export class GoogleMerchantService {
   constructor(private readonly googleOAuthService: GoogleOAuthService) {}
 
-  // Get all merchant accounts the user has access to
   async getUserMerchantAccounts(
     accessToken: string,
   ): Promise<MerchantCenterAccount[]> {
@@ -35,7 +23,7 @@ export class GoogleMerchantService {
         const response = await merchantApi.accounts.list();
         if (response.data.accounts && response.data.accounts.length > 0) {
           return response.data.accounts.map((account: any) => ({
-            id: account.name?.split('/')[1] ?? '', // Extract ID from resource name
+            id: account.name?.split('/')[1] ?? '',
             name: account.accountName ?? '',
             websiteUrl: account.homepageUri ?? '',
             adultContent: account.adultContent || false,
@@ -150,7 +138,6 @@ export class GoogleMerchantService {
     }
   }
 
-  // Additional methods remain the same...
   async getProducts(accessToken: string, merchantId: string): Promise<any[]> {
     this.googleOAuthService.setCredentials(accessToken);
     const content = google.content({
@@ -219,7 +206,9 @@ export class GoogleMerchantService {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to create data feed: ${error.message}`);
+      throw new BadRequestDomainException(
+        `Failed to create data feed: ${error.message}`,
+      );
     }
   }
 }
