@@ -82,6 +82,11 @@ export class CatalogIntegrationEntity extends BaseEntity {
     this.updateTimestamp();
   }
 
+  setPlatformConfigs(configs: Record<string, any>): void {
+    this._platformConfigs = { ...this._platformConfigs, ...configs };
+    this.updateTimestamp();
+  }
+
   isTokenExpired(): boolean {
     if (!this._tokenExpiresAt) return false;
     return new Date() >= this._tokenExpiresAt;

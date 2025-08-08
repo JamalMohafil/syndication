@@ -66,7 +66,6 @@ export class GoogleIntegrationController {
       throw new BadRequestDomainException('Merchant ID is required');
     }
 
-    // Set credentials
     this.googleOAuthService.setCredentials(
       integration.accessToken,
       integration.refreshToken,

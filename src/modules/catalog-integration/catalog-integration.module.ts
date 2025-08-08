@@ -11,6 +11,7 @@ import { IntegrationController } from './presentation/controllers/integration.co
 import { MetaIntegrationController } from './presentation/controllers/meta.controller';
 import { GoogleIntegrationController } from './presentation/controllers/google.controller';
 import { OAuthController } from './presentation/controllers/oauth.controller';
+import { GoogleAdsService } from './infrastructure/external-services/google/google-ads.service';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { OAuthController } from './presentation/controllers/oauth.controller';
   ],
   providers: [
     GoogleOAuthService,
+    GoogleAdsService,
     CatalogIntegrationService,
     {
       provide: CatalogIntegrationRepository,
@@ -35,6 +37,7 @@ import { OAuthController } from './presentation/controllers/oauth.controller';
     GoogleMerchantService,
   ],
   exports: [
+    GoogleAdsService,
     GoogleOAuthService,
     MetaOAuthService,
     GoogleMerchantService,

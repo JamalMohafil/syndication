@@ -9,6 +9,21 @@ export interface GoogleTokenResponse {
   token_type: string;
 }
 
+export interface MerchantAccount {
+  id: string;
+  name: string;
+  websiteUrl?: string;
+  adultContent?: boolean;
+  kind?: string;
+}
+
+export interface AuthInfo {
+  accountIdentifiers: Array<{
+    merchantId: string;
+    aggregatorId?: string;
+  }>;
+}
+
 @Injectable()
 export class GoogleOAuthService {
   private oauth2Client: any;
@@ -67,5 +82,95 @@ export class GoogleOAuthService {
 
   getAuthClient() {
     return this.oauth2Client;
+  }
+
+  async getUserMerchantAccounts(accessToken: string): Promise<AuthInfo> {
+    this.setCredentials(accessToken);
+    const content = google.content({
+      version: 'v2.1',
+      auth: this.oauth2Client,
+    });
+
+    try {
+      const response = await content.accounts.authinfo();
+      return response.data as AuthInfo;
+    } catch (error) {
+      throw new Error(`Failed to get merchant account info: ${error.message}`);
+    }
+  }
+
+  async getMerchantAccountDetails(
+    accessToken: string,
+    merchantId: string,
+  ): Promise<MerchantAccount[]> {
+    this.setCredentials(accessToken);
+    const content = google.content({
+      version: 'v2.1',
+      auth: this.oauth2Client,
+    });
+
+    try {
+      const response = await content.accounts.list({
+        merchantId: merchantId,
+      });
+
+      return (
+        response.data.resources?.map((account) => ({
+          id: account.id ?? '',
+          name: account.name ?? '',
+          websiteUrl: account.websiteUrl ?? '',
+          adultContent: account.adultContent || false,
+          kind: account.kind || '',
+        })) || []
+      );
+    } catch (error) {
+      console.error('Failed to fetch merchant account details:', error);
+      return [];
+    }
+  }
+
+  async getSingleMerchantAccount(
+    accessToken: string,
+    merchantId: string,
+  ): Promise<MerchantAccount | null> {
+    this.setCredentials(accessToken);
+    const content = google.content({
+      version: 'v2.1',
+      auth: this.oauth2Client,
+    });
+
+    try {
+      const response = await content.accounts.get({
+        merchantId: merchantId,
+        accountId: merchantId,
+      });
+
+      if (response.data) {
+        return {
+          id: response.data.id ?? '',
+          name: response.data.name ?? '',
+          websiteUrl: response.data.websiteUrl ?? '',
+          adultContent: response.data.adultContent || false,
+          kind: response.data.kind || '',
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to get merchant account:', error);
+      return null;
+    }
+  }
+
+  async getUserInfo(accessToken: string): Promise<any> {
+    this.setCredentials(accessToken);
+    const authClient = this.getAuthClient();
+
+    try {
+      const oauth2 = google.oauth2({ version: 'v2', auth: authClient });
+      const response = await oauth2.userinfo.get();
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get user info: ${error.message}`);
+    }
   }
 }

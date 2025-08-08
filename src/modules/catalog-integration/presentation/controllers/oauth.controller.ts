@@ -32,6 +32,7 @@ import { AuthUrlResponseDto } from '../responses/auth-url.response';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { ConnectIntegrationDto } from '../dto/connect-integration.dto';
+import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
 
 @ApiTags('OAuth Authentication')
 @Controller('oauth')
@@ -40,6 +41,7 @@ export class OAuthController {
     private readonly catalogIntegrationService: CatalogIntegrationService,
     private readonly googleOAuthService: GoogleOAuthService,
     private readonly metaOAuthService: MetaOAuthService,
+    private readonly googleMerchantService: GoogleMerchantService,
   ) {}
 
   @Get('auth-url/:platform')
@@ -94,6 +96,87 @@ export class OAuthController {
       authUrl,
       platform: platformType,
       scopes,
+    };
+  }
+
+  @Get('google/merchant-accounts')
+  @ApiOperation({
+    summary: 'Get available merchant accounts',
+    description: 'Get all merchant accounts the user has access to',
+  })
+  @ApiBearerAuth()
+  @UseGuards(TenantAuthGuard)
+  async getGoogleMerchantAccounts(@Req() req: FastifyRequest) {
+    const tenantId = (req as any).tenantId;
+
+    const integration =
+      await this.catalogIntegrationService.getTenantIntegrations(tenantId);
+    const googleIntegration = integration.find(
+      (int) => int.platform === PlatformType.GOOGLE,
+    );
+
+    if (!googleIntegration) {
+      throw new NotFoundDomainException('Google integration not found');
+    }
+
+    const merchantAccounts =
+      await this.googleMerchantService.getUserMerchantAccounts(
+        googleIntegration.accessToken,
+      );
+
+    return {
+      merchantAccounts,
+      hasAccess: merchantAccounts.length > 0,
+    };
+  }
+
+  @Post('google/setup-merchant')
+  @ApiOperation({
+    summary: 'Setup Google Merchant Center account',
+    description: 'Configure the merchant center account to use for shopping',
+  })
+  @ApiBearerAuth()
+  @UseGuards(TenantAuthGuard)
+  async setupGoogleMerchant(
+    @Body() body: { merchantId: string },
+    @Req() req: FastifyRequest,
+  ) {
+    const tenantId = (req as any).tenantId;
+
+    const result =
+      await this.catalogIntegrationService.setupGoogleMerchantAccount(
+        tenantId,
+        body.merchantId,
+      );
+
+    return {
+      success: true,
+      integration: this.mapToResponseDto(result.integration),
+      accountInfo: result.accountInfo,
+    };
+  }
+
+  @Post('google/setup-ads')
+  @ApiOperation({
+    summary: 'Setup Google Ads account',
+    description: 'Configure the Google Ads customer ID for advertising',
+  })
+  @ApiBearerAuth()
+  @UseGuards(TenantAuthGuard)
+  async setupGoogleAds(
+    @Body() body: { customerId: string },
+    @Req() req: FastifyRequest,
+  ) {
+    const tenantId = (req as any).tenantId;
+
+    const result = await this.catalogIntegrationService.setupGoogleAdsAccount(
+      tenantId,
+      body.customerId,
+    );
+
+    return {
+      success: true,
+      integration: this.mapToResponseDto(result.integration),
     };
   }
 
