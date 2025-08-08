@@ -26,7 +26,7 @@ export class GenerateAuthUrlUseCase {
     request: GenerateAuthUrlRequest,
   ): Promise<GenerateAuthUrlResponse> {
     const { platform, tenantId } = request;
-
+    if (!tenantId) throw new BadRequestDomainException('Tenant ID is required');
     switch (platform) {
       case PlatformType.GOOGLE:
         return this.generateGoogleAuthUrl(tenantId);
@@ -55,10 +55,15 @@ export class GenerateAuthUrlUseCase {
   }
 
   private generateMetaAuthUrl(tenantId: string): GenerateAuthUrlResponse {
-    const scopes = [
+    const scopes2 = [
       'catalog_management',
       'business_management',
-      'ads_management',
+      // 'ads_management',
+    ];
+    const scopes = [
+      'email',
+      'public_profile',
+      // 'ads_management',
     ];
 
     const authUrl = this.metaOAuthProvider.generateAuthUrl(scopes, tenantId);

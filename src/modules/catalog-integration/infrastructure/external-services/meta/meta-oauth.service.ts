@@ -23,9 +23,9 @@ export class MetaOAuthService {
     const clientId = this.configService.get('META_APP_ID');
     const redirectUri = this.configService.get('META_REDIRECT_URI');
     const scopeString = scopes.join(',');
+    const authUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopeString}&response_type=code&state=${state}`;
 
-    return `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopeString}&response_type=code
-    &state=${state}`;
+    return authUrl; 
   }
 
   async getTokensFromCode(code: string): Promise<MetaTokenResponse> {

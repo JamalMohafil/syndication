@@ -5,7 +5,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import * as morgan from 'morgan';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { GlobalExceptionFilter } from './shared/presentation/filters/exception.filter';
@@ -35,7 +35,9 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: [{ path: '/', method: RequestMethod.GET }],
+  });
 
   const config = new DocumentBuilder()
     .setTitle('Products Integration Platform')

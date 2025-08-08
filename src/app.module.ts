@@ -8,6 +8,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { ProductFeedModule } from './modules/product-feed/product-feed.module';
 import { SharedModule } from './shared/shared.module';
 import { CatalogIntegrationModule } from './modules/catalog-integration/catalog-integration.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -31,5 +32,7 @@ import { CatalogIntegrationModule } from './modules/catalog-integration/catalog-
     ProductFeedModule,
     // FeedSyncJobModule,
   ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}

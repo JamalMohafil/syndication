@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PlatformType } from '../../../domain/enums/platform-type.enum';
- import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
+import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 import { CatalogIntegrationService } from '../../services/catalog-integration.service';
 
 export interface HandleOAuthCallbackRequest {
@@ -26,6 +26,7 @@ export class HandleOAuthCallbackUseCase {
     request: HandleOAuthCallbackRequest,
   ): Promise<HandleOAuthCallbackResponse> {
     const { platform, code, tenantId, error } = request;
+    console.log(platform, code, tenantId, error);
 
     if (error) {
       return {
@@ -64,7 +65,7 @@ export class HandleOAuthCallbackUseCase {
             `Unsupported platform: ${platform}`,
           );
       }
-
+      console.log(integration);
       return {
         success: true,
         integrationId: integration.id,

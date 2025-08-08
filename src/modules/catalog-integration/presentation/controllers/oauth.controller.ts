@@ -10,6 +10,7 @@ import {
   UseGuards,
   Res,
   Query,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,6 +40,9 @@ import { SetupMerchantAccountUseCase } from '../../application/use-cases/google/
 import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
 import { ConnectPlatformUseCase } from '../../application/use-cases/auth/connect-platform.use-case';
 import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
+import appConfig from 'src/shared/infrastructure/config/app.config';
+import { ConfigType } from '@nestjs/config';
+import { repl } from '@nestjs/core';
 
 @ApiTags('OAuth Authentication')
 @Controller('oauth')
@@ -50,8 +54,10 @@ export class OAuthController {
     private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
     private readonly connectPlatformUseCase: ConnectPlatformUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
+    @Inject(appConfig.KEY)
+    private readonly config: ConfigType<typeof appConfig>,
   ) {}
-
+ 
   @Get('auth-url/:platform')
   @ApiOperation({
     summary: 'Get OAuth authorization URL',
@@ -145,20 +151,20 @@ export class OAuthController {
     @Res() reply: FastifyReply,
   ) {
     const platformType = platform.toUpperCase() as PlatformType;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
+    const frontendUrl = this.config.frontendUrl || 'http://localhost:3000';
     const result = await this.handleOAuthCallbackUseCase.execute({
       platform: platformType,
       code,
       tenantId,
       error,
     });
-
+    console.log(result, 'result');
     if (!result.success) {
       return reply.redirect(
         `${frontendUrl}/integrations/error?message=${encodeURIComponent(
           result.errorMessage || 'Unknown error',
         )}`,
+        401,
       );
     }
 

@@ -9,8 +9,10 @@ import { TenantAuthGuard } from '../../infrastructure/guards/tenant-auth.guard';
 import { GetBusinessAccountsUseCase } from '../../application/use-cases/meta/get-business-accounts.use-case';
 import { GetMetaIntegrationUseCase } from '../../application/use-cases/meta/get-meta-integration.use-case';
 import { GetMetaCatalogsUseCase } from '../../application/use-cases/meta/get-meta-catalogs.use-case';
-
+export const META_ACCESS_TOKEN =
+  'EAAfJpu74DtkBPGouLZAzkhDD3WhTGZCCOn0ido8xOvCgvhMkRgaAMjg5XrUHCeNBUY6jk7ZAO331lPR32qhvyLbAKCBSYtNLecdX8AJqFSqbScUY5d3t357oRNEzVu6oeLoH8ajKsaJm01bijkakFAnmc7SjMZCWE6D9tuxjwjzkB419uD6uZCPV0eFn6gIMOCpvMrKFMeqdrqQXhBqeHErGPnT1c0hQFpbEM';
 @ApiTags('Meta Integration')
+// EAAfJpu74DtkBPJ1vArMEVfi1bACHIjPuQaDBKOMtZAsSPMqs69TIh8KZBL4tutBrxDZASPtY4josF6KFLyJQC7su72uem37riZC5r2ZB9hBuBrPS0taDoiSF29nTntvpdlZCLhHtijgDW9syrIclDX8ZAq2QwAsGDA27QtbgRMxWv6caxnDNFj25t2z5ubILYjsVvYgHPM0LUZAA8pgttalk8HC3gKT5BJLxZAQZDZD
 @Controller('meta')
 @ApiBearerAuth()
 @UseGuards(TenantAuthGuard)
@@ -28,6 +30,7 @@ export class MetaIntegrationController {
   })
   async getBusinessAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
+    console.log(tenantId)
     const res = await this.getBusinessAccountsUseCase.execute({
       tenantId,
     });
