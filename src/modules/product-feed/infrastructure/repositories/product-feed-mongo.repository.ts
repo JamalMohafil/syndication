@@ -3,13 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ProductFeedRepository } from '../../domain/repositories/product-feed.repository';
 import { ProductFeedEntity } from '../../domain/entities/product-feed.entity';
-import { ProductFeedDocument } from '../schemas/product-feed.schema';
+import { ProductFeedDocument, ProductFeedName } from '../schemas/product-feed.schema';
 import { FeedStatus } from '../../domain/enums/feed-status.enum';
 
 @Injectable()
 export class ProductFeedMongoRepository extends ProductFeedRepository {
   constructor(
-    @InjectModel(ProductFeedDocument.name)
+    @InjectModel(ProductFeedName)
     private readonly productFeedModel: Model<ProductFeedDocument>,
   ) {
     super();
@@ -83,6 +83,7 @@ export class ProductFeedMongoRepository extends ProductFeedRepository {
   }
 
   private toDomainEntity(document: ProductFeedDocument): ProductFeedEntity {
+    console.log(document, 'document');
     return new ProductFeedEntity({
       id: document.id.toString(),
       tenantId: document.tenantId,

@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
 import { DomainException } from 'src/shared/domain/exceptions/domain.exception';
 
 @Catch()
@@ -15,7 +14,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+
+    // في Fastify، response هو reply object
+    const response = ctx.getResponse<any>();
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -53,7 +54,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception.stack || '',
     );
 
-    response.status(status).json({
+    // ارسال الرد عبر Fastify reply
+    response.status(status).send({
       success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),

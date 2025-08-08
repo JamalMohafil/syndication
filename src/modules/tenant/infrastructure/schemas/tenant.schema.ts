@@ -1,28 +1,25 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-
-@Schema({
-  timestamps: true,
-  collection: 'tenants',
-})
-export class TenantDocument extends Document {
-  @Prop({ required: true, trim: true })
-  name: string;
-
-  @Prop({ required: true, unique: true, trim: true, lowercase: true })
-  email: string;
-
-  @Prop({ required: true, default: 'en' })
-  defaultLanguage: string;
-
-  @Prop({ required: true, default: 'USD' })
-  defaultCurrency: string;
-
-  @Prop({ required: true, default: 'UTC' })
-  timezone: string;
-
-  @Prop({ required: true, default: true })
-  isActive: boolean;
-}
-
-export const TenantSchema = SchemaFactory.createForClass(TenantDocument);
+import { Schema, Document } from 'mongoose';
+import { TenantEntity, TenantProps } from '../../domain/entities/tenant.entity';
+ 
+export type TenantDocument = TenantProps & Document;
+export const TenantDocumentName = 'tenant';
+export const TenantSchema = new Schema<TenantDocument>(
+  {
+    name: { type: String, required: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    defaultLanguage: { type: String, required: true, default: 'en' },
+    defaultCurrency: { type: String, required: true, default: 'USD' },
+    timezone: { type: String, required: true, default: 'UTC' },
+    isActive: { type: Boolean, required: true, default: true },
+  },
+  {
+    collection: 'tenants',
+    timestamps: true,
+  },
+);

@@ -1,7 +1,6 @@
 import { BaseEntity } from '../../../../shared/domain/entities/base.entity';
 
-export interface TenantConstructorParams {
-  id?: string;
+export interface TenantProps {
   name: string;
   email: string;
   defaultLanguage: string;
@@ -18,8 +17,13 @@ export class TenantEntity extends BaseEntity {
   private _timezone: string;
   private _isActive: boolean;
 
-  constructor(params: TenantConstructorParams) {
-    super();
+  constructor(
+    params: TenantProps,
+    id?: string,
+    createdAt?: Date,
+    updatedAt?: Date,
+  ) {
+    super(id, createdAt, updatedAt);
     this._name = params.name;
     this._email = params.email;
     this._defaultLanguage = params.defaultLanguage;

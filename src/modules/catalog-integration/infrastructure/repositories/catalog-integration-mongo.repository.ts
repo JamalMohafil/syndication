@@ -3,13 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CatalogIntegrationRepository } from '../../domain/repositories/catalog-integration.repository';
 import { CatalogIntegrationEntity } from '../../domain/entities/catalog-integration.entity';
-import { CatalogIntegrationDocument } from '../schemas/catalog-integration.schema';
+import { CatalogIntegrationDocument, CatalogIntegrationName } from '../schemas/catalog-integration.schema';
 import { PlatformType } from '../../domain/enums/platform-type.enum';
 
 @Injectable()
 export class CatalogIntegrationMongoRepository extends CatalogIntegrationRepository {
   constructor(
-    @InjectModel(CatalogIntegrationDocument.name)
+    @InjectModel(CatalogIntegrationName)
     private readonly catalogIntegrationModel: Model<CatalogIntegrationDocument>,
   ) {
     super();

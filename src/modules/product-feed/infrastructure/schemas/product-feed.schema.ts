@@ -1,39 +1,32 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Schema, Document } from 'mongoose';
+import {
+  ProductFeedEntity,
+  ProductFeedProps,
+} from '../../domain/entities/product-feed.entity';
 import { FileType } from '../../domain/enums/file-type.enum';
 import { FeedStatus } from '../../domain/enums/feed-status.enum';
 
-@Schema({
-  timestamps: true,
-  collection: 'product_feeds',
-})
-export class ProductFeedDocument extends Document {
-  @Prop({ required: true })
-  tenantId: string;
-
-  @Prop({ required: true })
-  fileUrl: string;
-  @Prop({ required: true })
-  fileName: string;
-
-  @Prop({ required: true, enum: FileType })
-  fileType: FileType;
-
-  @Prop({ required: true })
-  fileSize: number;
-
-  @Prop({ required: true, default: 0 })
-  totalProducts: number;
-
-  @Prop({ required: true, enum: FeedStatus, default: FeedStatus.PENDING })
-  status: FeedStatus;
-
-  @Prop({ required: true })
-  createdBy: string;
-
-  @Prop()
-  errorMessage?: string;
-}
-
-export const ProductFeedSchema =
-  SchemaFactory.createForClass(ProductFeedDocument);
+export type ProductFeedDocument = ProductFeedProps & Document;
+export const ProductFeedName = 'product_feed';
+export const ProductFeedSchema = new Schema<ProductFeedDocument>(
+  {
+    tenantId: { type: String, required: true },
+    fileUrl: { type: String, required: true },
+    fileName: { type: String, required: true },
+    fileType: { type: String, required: true, enum: Object.values(FileType) },
+    fileSize: { type: Number, required: true },
+    totalProducts: { type: Number, required: true, default: 0 },
+    status: {
+      type: String,
+      required: true,
+      enum: Object.values(FeedStatus),
+      default: FeedStatus.PENDING,
+    },
+    createdBy: { type: String, required: true },
+    errorMessage: { type: String },
+  },
+  {
+    collection: 'product_feeds',
+    timestamps: true,
+  },
+);

@@ -7,6 +7,7 @@ import { FeedBuilderService } from './application/services/feed-builder.service'
 import { ProductFeedMongoRepository } from './infrastructure/repositories/product-feed-mongo.repository';
 import {
   ProductFeedDocument,
+  ProductFeedName,
   ProductFeedSchema,
 } from './infrastructure/schemas/product-feed.schema';
 import { ProductFeedRepository } from './domain/repositories/product-feed.repository';
@@ -14,7 +15,7 @@ import { ProductFeedRepository } from './domain/repositories/product-feed.reposi
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: ProductFeedDocument.name, schema: ProductFeedSchema },
+      { name: ProductFeedName, schema: ProductFeedSchema },
     ]),
   ],
   controllers: [ProductFeedController, FeedUrlController],

@@ -3,15 +3,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { TenantRepository } from '../../domain/repositories/tenant.repository';
 import { TenantEntity } from '../../domain/entities/tenant.entity';
-import { TenantDocument } from '../schemas/tenant.schema';
+import { TenantDocument, TenantDocumentName } from '../schemas/tenant.schema';
 
 @Injectable()
 export class MongoTenantRepository extends TenantRepository {
   constructor(
-    @InjectModel(TenantDocument.name)
+    @InjectModel(TenantDocumentName)
     private readonly tenantModel: Model<TenantDocument>,
   ) {
-    super()
+    super();
   }
 
   async findById(id: string): Promise<TenantEntity | null> {
@@ -45,6 +45,8 @@ export class MongoTenantRepository extends TenantRepository {
     });
 
     const savedTenant = await createdTenant.save();
+    console.log(savedTenant, 'savedTenant');
+    console.log(this.toDomainEntity(savedTenant), 'savedTenant');
     return this.toDomainEntity(savedTenant);
   }
 
@@ -69,14 +71,19 @@ export class MongoTenantRepository extends TenantRepository {
   }
 
   private toDomainEntity(document: TenantDocument): TenantEntity {
-    return new TenantEntity({
-      id: document.id.toString(),
-      name: document.name,
-      email: document.email,
-      defaultLanguage: document.defaultLanguage,
-      defaultCurrency: document.defaultCurrency,
-      timezone: document.timezone,
-      isActive: document.isActive,
-    });
+    console.log(document, 'document');
+    return new TenantEntity(
+      {
+        name: document.name,
+        email: document.email,
+        defaultLanguage: document.defaultLanguage,
+        defaultCurrency: document.defaultCurrency,
+        timezone: document.timezone,
+        isActive: document.isActive,
+      },
+      String(document._id),
+      // document.toObject().createdAt,
+      // document.updatedAt,
+    );
   }
 }

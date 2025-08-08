@@ -2,7 +2,7 @@ import { BaseEntity } from 'src/shared/domain/entities/base.entity';
 import { FileType } from '../enums/file-type.enum';
 import { FeedStatus } from '../enums/feed-status.enum';
 
-export interface ProductFeedConstructorParams {
+export interface ProductFeedProps {
   id?: string;
   tenantId: string;
   fileUrl: string;
@@ -26,7 +26,7 @@ export class ProductFeedEntity extends BaseEntity {
   private _createdBy: string;
   private _errorMessage?: string;
 
-  constructor(params: ProductFeedConstructorParams) {
+  constructor(params: ProductFeedProps) {
     super();
     this._tenantId = params.tenantId;
     this._fileUrl = params.fileUrl;

@@ -2,7 +2,7 @@ import { BaseEntity } from '../../../../shared/domain/entities/base.entity';
 import { PlatformType } from '../enums/platform-type.enum';
 import { IntegrationStatus } from '../enums/integration-status.enum';
 
-export interface CatalogIntegrationConstructorParams {
+export interface CatalogIntegrationProps {
   id?: string;
   tenantId: string;
   platform: PlatformType;
@@ -24,7 +24,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
   private _platformConfigs?: Record<string, any>;
   private _status: IntegrationStatus;
 
-  constructor(params: CatalogIntegrationConstructorParams) {
+  constructor(params: CatalogIntegrationProps) {
     super();
     this._tenantId = params.tenantId;
     this._platform = params.platform;
