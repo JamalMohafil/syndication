@@ -10,9 +10,7 @@ export interface CatalogIntegrationConstructorParams {
   refreshToken?: string;
   tokenExpiresAt?: Date;
   externalId?: string;
-  googleAdsCustomerId?: string;
-  googleAdsAccessToken?: string;
-  googleAdsRefreshToken?: string;
+  platformConfigs?: Record<string, any>;
   status: IntegrationStatus;
 }
 
@@ -23,9 +21,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
   private _refreshToken?: string;
   private _tokenExpiresAt?: Date;
   private _externalId?: string;
-  private _googleAdsCustomerId?: string;
-  private _googleAdsAccessToken?: string;
-  private _googleAdsRefreshToken?: string;
+  private _platformConfigs?: Record<string, any>;
   private _status: IntegrationStatus;
 
   constructor(params: CatalogIntegrationConstructorParams) {
@@ -36,9 +32,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
     this._refreshToken = params.refreshToken;
     this._tokenExpiresAt = params.tokenExpiresAt;
     this._externalId = params.externalId;
-    this._googleAdsCustomerId = params.googleAdsCustomerId;
-    this._googleAdsAccessToken = params.googleAdsAccessToken;
-    this._googleAdsRefreshToken = params.googleAdsRefreshToken;
+    this._platformConfigs = this._platformConfigs ?? {};
     this._status = params.status;
   }
 
@@ -60,14 +54,8 @@ export class CatalogIntegrationEntity extends BaseEntity {
   get externalId(): string | undefined {
     return this._externalId;
   }
-  get googleAdsCustomerId(): string | undefined {
-    return this._googleAdsCustomerId;
-  }
-  get googleAdsAccessToken(): string | undefined {
-    return this._googleAdsAccessToken;
-  }
-  get googleAdsRefreshToken(): string | undefined {
-    return this._googleAdsRefreshToken;
+  get platformConfigs(): Record<string, any> | undefined {
+    return this._platformConfigs;
   }
   get status(): IntegrationStatus {
     return this._status;
@@ -108,9 +96,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
       refreshToken: this._refreshToken,
       tokenExpiresAt: this._tokenExpiresAt,
       externalId: this._externalId,
-      googleAdsCustomerId: this._googleAdsCustomerId,
-      googleAdsAccessToken: this._googleAdsAccessToken,
-      googleAdsRefreshToken: this._googleAdsRefreshToken,
+      platformConfigs: this._platformConfigs,
       status: this._status,
     };
   }

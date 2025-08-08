@@ -7,6 +7,8 @@ import {
 import * as morgan from 'morgan';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
+import { GlobalExceptionFilter } from './shared/presentation/filters/exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -16,7 +18,7 @@ async function bootstrap() {
   );
 
   app.use(morgan('dev'));
-
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

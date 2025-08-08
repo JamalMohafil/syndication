@@ -7,14 +7,12 @@ import { CatalogIntegrationDocument } from '../schemas/catalog-integration.schem
 import { PlatformType } from '../../domain/enums/platform-type.enum';
 
 @Injectable()
-export class CatalogIntegrationMongoRepository
-  extends CatalogIntegrationRepository
-{
+export class CatalogIntegrationMongoRepository extends CatalogIntegrationRepository {
   constructor(
     @InjectModel(CatalogIntegrationDocument.name)
     private readonly catalogIntegrationModel: Model<CatalogIntegrationDocument>,
   ) {
-    super()
+    super();
   }
 
   async findById(id: string): Promise<CatalogIntegrationEntity | null> {
@@ -64,9 +62,7 @@ export class CatalogIntegrationMongoRepository
       refreshToken: entity.refreshToken,
       tokenExpiresAt: entity.tokenExpiresAt,
       externalId: entity.externalId,
-      googleAdsCustomerId: entity.googleAdsCustomerId,
-      googleAdsAccessToken: entity.googleAdsAccessToken,
-      googleAdsRefreshToken: entity.googleAdsRefreshToken,
+      platformConfigs: entity.platformConfigs,
       status: entity.status,
     });
 
@@ -107,9 +103,7 @@ export class CatalogIntegrationMongoRepository
       refreshToken: document.refreshToken,
       tokenExpiresAt: document.tokenExpiresAt,
       externalId: document.externalId,
-      googleAdsCustomerId: document.googleAdsCustomerId,
-      googleAdsAccessToken: document.googleAdsAccessToken,
-      googleAdsRefreshToken: document.googleAdsRefreshToken,
+      platformConfigs: document.platformConfigs,
       status: document.status,
     });
   }

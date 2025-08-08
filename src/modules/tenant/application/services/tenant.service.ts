@@ -30,8 +30,9 @@ export class TenantService {
       timezone,
       isActive: true,
     });
-
-    return await this.tenantRepository.create(tenant);
+    const createdTenant = await this.tenantRepository.create(tenant);
+    console.log(createdTenant);
+    return createdTenant;
   }
 
   async getTenantById(id: string): Promise<TenantEntity> {
