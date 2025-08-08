@@ -32,6 +32,7 @@ import { GetTenantIntegrationsUseCase } from './application/use-cases/integratio
 import { TokenRefreshScheduler } from './infrastructure/schedulers/token-refresh.scheduler';
 import { TokenRefreshProcessor } from './infrastructure/processors/token-refresh.processor';
 import { BullModule } from '@nestjs/bullmq';
+import { MetaCatalogService } from './infrastructure/external-services/meta/meta-catalog.service';
 
 const useCases = [
   GenerateAuthUrlUseCase,
@@ -71,6 +72,7 @@ const useCases = [
   ],
   providers: [
     GoogleOAuthService,
+    MetaCatalogService,
     CatalogIntegrationService,
     TokenRefreshScheduler,
     TokenRefreshProcessor,
@@ -87,6 +89,7 @@ const useCases = [
     MetaOAuthService,
     GoogleMerchantService,
     ...useCases,
+    MetaCatalogService,
     CatalogIntegrationService,
     TokenRefreshProcessor,
     TokenRefreshScheduler,

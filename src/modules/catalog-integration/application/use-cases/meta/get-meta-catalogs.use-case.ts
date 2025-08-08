@@ -3,19 +3,25 @@ import { CatalogIntegrationRepository } from '../../../domain/repositories/catal
 import { PlatformType } from '../../../domain/enums/platform-type.enum';
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
+import {
+  MetaCatalogService,
+  MetaCatalog,
+} from 'src/modules/catalog-integration/infrastructure/external-services/meta/meta-catalog.service';
 
 export interface GetMetaCatalogsRequest {
   tenantId: string;
+  businessId?: string;
 }
 
 @Injectable()
 export class GetMetaCatalogsUseCase {
   constructor(
     private readonly integrationRepository: CatalogIntegrationRepository,
+    private readonly metaCatalogService: MetaCatalogService,
   ) {}
 
-  async execute(request: GetMetaCatalogsRequest): Promise<any> {
-    const { tenantId } = request;
+  async execute(request: GetMetaCatalogsRequest): Promise<MetaCatalog[]> {
+    const { tenantId, businessId } = request;
 
     const integration =
       await this.integrationRepository.findByTenantAndPlatform(
@@ -31,7 +37,9 @@ export class GetMetaCatalogsUseCase {
       throw new BadRequestDomainException('Meta integration is not active');
     }
 
-    // TODO: Implement Meta catalog service
-    return { message: 'Meta catalogs endpoint - implement MetaCatalogService' };
+    return await this.metaCatalogService.getCatalogs(
+      integration.accessToken,
+      businessId,
+    );
   }
 }
