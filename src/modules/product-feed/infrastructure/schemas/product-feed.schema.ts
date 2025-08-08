@@ -13,6 +13,8 @@ export class ProductFeedDocument extends Document {
 
   @Prop({ required: true })
   fileUrl: string;
+  @Prop({ required: true })
+  fileName: string;
 
   @Prop({ required: true, enum: FileType })
   fileType: FileType;

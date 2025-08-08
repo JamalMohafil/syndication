@@ -2,12 +2,13 @@ import { BaseRepository } from '../../../../shared/domain/repositories/base.repo
 import { CatalogIntegrationEntity } from '../entities/catalog-integration.entity';
 import { PlatformType } from '../enums/platform-type.enum';
 
-export interface CatalogIntegrationRepository
-  extends BaseRepository<CatalogIntegrationEntity> {
-  findByTenantId(tenantId: string): Promise<CatalogIntegrationEntity[]>;
-  findByTenantAndPlatform(
+export abstract class CatalogIntegrationRepository extends BaseRepository<CatalogIntegrationEntity> {
+  abstract findByTenantId(
+    tenantId: string,
+  ): Promise<CatalogIntegrationEntity[]>;
+  abstract findByTenantAndPlatform(
     tenantId: string,
     platform: PlatformType,
   ): Promise<CatalogIntegrationEntity | null>;
-  findExpiredTokens(): Promise<CatalogIntegrationEntity[]>;
+  abstract findExpiredTokens(): Promise<CatalogIntegrationEntity[]>;
 }

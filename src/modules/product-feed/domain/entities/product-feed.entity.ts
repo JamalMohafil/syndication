@@ -1,6 +1,6 @@
 import { BaseEntity } from 'src/shared/domain/entities/base.entity';
 import { FileType } from '../enums/file-type.enum';
-import { FeedStatus } from '../domain/enums/feed-status.enum';
+import { FeedStatus } from '../enums/feed-status.enum';
 
 export interface ProductFeedConstructorParams {
   id?: string;

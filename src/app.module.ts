@@ -1,4 +1,3 @@
-// app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -6,9 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { TenantModule } from './modules/tenant/tenant.module';
-import { CatalogIntegrationModule } from './modules/catalog-integration/catalog-integration.module';
 import { ProductFeedModule } from './modules/product-feed/product-feed.module';
-import { FeedSyncJobModule } from './modules/feed-sync-job/feed-sync-job.module';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
@@ -23,15 +20,15 @@ import { SharedModule } from './shared/shared.module';
     BullModule.forRoot({
       redis: {
         host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT) || 6379,
+        port: parseInt(process.env.REDIS_PORT as string) || 6379,
       },
     }),
     ScheduleModule.forRoot(),
     SharedModule,
     TenantModule,
-    CatalogIntegrationModule,
+    // CatalogIntegrationModule,
     ProductFeedModule,
-    FeedSyncJobModule,
+    // FeedSyncJobModule,
   ],
 })
 export class AppModule {}

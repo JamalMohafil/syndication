@@ -8,12 +8,14 @@ import { PlatformType } from '../../domain/enums/platform-type.enum';
 
 @Injectable()
 export class CatalogIntegrationMongoRepository
-  implements CatalogIntegrationRepository
+  extends CatalogIntegrationRepository
 {
   constructor(
     @InjectModel(CatalogIntegrationDocument.name)
     private readonly catalogIntegrationModel: Model<CatalogIntegrationDocument>,
-  ) {}
+  ) {
+    super()
+  }
 
   async findById(id: string): Promise<CatalogIntegrationEntity | null> {
     const integration = await this.catalogIntegrationModel.findById(id).exec();

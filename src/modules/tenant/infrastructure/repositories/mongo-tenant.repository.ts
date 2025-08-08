@@ -6,11 +6,13 @@ import { TenantEntity } from '../../domain/entities/tenant.entity';
 import { TenantDocument } from '../schemas/tenant.schema';
 
 @Injectable()
-export class MongoTenantRepository implements TenantRepository {
+export class MongoTenantRepository extends TenantRepository {
   constructor(
     @InjectModel(TenantDocument.name)
     private readonly tenantModel: Model<TenantDocument>,
-  ) {}
+  ) {
+    super()
+  }
 
   async findById(id: string): Promise<TenantEntity | null> {
     const tenant = await this.tenantModel.findById(id).exec();

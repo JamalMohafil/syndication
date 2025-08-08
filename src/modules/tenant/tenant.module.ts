@@ -7,6 +7,7 @@ import {
 } from './infrastructure/schemas/tenant.schema';
 import { MongoTenantRepository } from './infrastructure/repositories/mongo-tenant.repository';
 import { TenantController } from './presentation/rest/controllers/tenant.controller';
+import { TenantRepository } from './domain/repositories/tenant.repository';
 
 @Module({
   imports: [
@@ -18,10 +19,10 @@ import { TenantController } from './presentation/rest/controllers/tenant.control
   providers: [
     TenantService,
     {
-      provide: 'TenantRepository',
+      provide: TenantRepository,
       useClass: MongoTenantRepository,
     },
   ],
-  exports: [TenantService, 'TenantRepository'],
+  exports: [TenantService, TenantRepository],
 })
 export class TenantModule {}

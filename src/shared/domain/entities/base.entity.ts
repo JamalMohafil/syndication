@@ -1,25 +1,36 @@
-import { v4 as uuidv4 } from 'uuid';
+import { Types } from 'mongoose';
 
 export abstract class BaseEntity {
-  protected readonly _id: string;
-  protected readonly _createdAt: Date;
-  protected readonly _updatedAt: Date;
+  protected _id: string;
+  protected _createdAt: Date;
+  protected _updatedAt: Date;
 
-  constructor(id?: string, createdAt?: Date, updatedAt?: Date) {
-    this._id = id ?? uuidv4();
-    this._createdAt = createdAt ?? new Date();
-    this._updatedAt = updatedAt ?? new Date();
+  constructor() {
+    this._createdAt = new Date();
+    this._updatedAt = new Date();
   }
 
   get id(): string {
-    return this._id;
+    return this._id.toString();
   }
 
   get createdAt(): Date {
-    return new Date(this._createdAt);
+    return this._createdAt;
   }
 
   get updatedAt(): Date {
-    return new Date(this._updatedAt);
+    return this._updatedAt;
+  }
+
+  updateTimestamp(): void {
+    this._updatedAt = new Date();
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
   }
 }
