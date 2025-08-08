@@ -36,6 +36,7 @@
     "facebook-nodejs-ads-sdk": "^2.11.4",
     "fastify": "^5.4.0",
     "googleapis": "^155.0.0",
+    "mime": "^4.0.7",
     "morgan": "^1.10.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

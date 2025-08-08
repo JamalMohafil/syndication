@@ -7,7 +7,7 @@ import {
   TenantSchema,
 } from './infrastructure/schemas/tenant.schema';
 import { MongoTenantRepository } from './infrastructure/repositories/mongo-tenant.repository';
-import { TenantController } from './presentation/rest/controllers/tenant.controller';
+import { TenantController } from './presentation/controllers/tenant.controller';
 import { TenantRepository } from './domain/repositories/tenant.repository';
 
 @Module({

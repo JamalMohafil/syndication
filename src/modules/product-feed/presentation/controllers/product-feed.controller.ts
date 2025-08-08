@@ -18,11 +18,9 @@ import {
 } from '@nestjs/swagger';
 import { ProductFeedService } from '../../application/services/product-feed.service';
 import { FileType } from '../../domain/enums/file-type.enum';
-
-export class GenerateDemoFeedDto {
-  tenantId: string;
-  fileType: FileType;
-}
+import { IsString } from 'class-validator';
+import { GenerateDemoFeedDto } from '../dto/generate-demo-feed.dto';
+import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
 
 @ApiTags('Product Feeds')
 @Controller('product-feeds')
@@ -55,7 +53,7 @@ export class ProductFeedController {
   async getFeedById(@Param('id') id: string) {
     const feed = await this.productFeedService.getFeedById(id);
     if (!feed) {
-      throw new Error('Feed not found');
+      throw new NotFoundDomainException('Feed not found');
     }
     return feed.toJSON();
   }

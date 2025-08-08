@@ -38,7 +38,7 @@ export class TenantService {
   async getTenantById(id: string): Promise<TenantEntity> {
     const tenant = await this.tenantRepository.findById(id);
     if (!tenant) {
-      throw new NotFoundDomainException('Tenant', id);
+      throw new NotFoundDomainException(`Tenant ${id} not found`);
     }
     return tenant;
   }
@@ -62,7 +62,7 @@ export class TenantService {
     const updatedTenant = await this.tenantRepository.update(id, updates);
 
     if (!updatedTenant) {
-      throw new NotFoundDomainException('Tenant', id);
+      throw new NotFoundDomainException(`Tenant ${id} not found`);
     }
 
     return updatedTenant;

@@ -1,8 +1,8 @@
 import { DomainException } from './domain.exception';
 
 export class NotFoundDomainException extends DomainException {
-  constructor(entity: string, id: string) {
-    super(`${entity} with id ${id} not found`);
+  constructor(message?: string) {
+    super(message ? message : 'Not found');
     this.name = 'NotFoundDomainException';
   }
 }

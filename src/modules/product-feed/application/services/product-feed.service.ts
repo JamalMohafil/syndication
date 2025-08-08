@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ProductFeedRepository } from '../../domain/repositories/product-feed.repository';
 import { ProductFeedEntity } from '../../domain/entities/product-feed.entity';
 import { FeedBuilderService } from './feed-builder.service';
@@ -6,12 +6,16 @@ import { FileType } from '../../domain/enums/file-type.enum';
 import { FeedStatus } from '../../domain/enums/feed-status.enum';
 import * as fs from 'fs';
 import * as path from 'path';
+import appConfig from 'src/shared/infrastructure/config/app.config';
+import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class ProductFeedService {
   constructor(
     private readonly productFeedRepository: ProductFeedRepository,
     private readonly feedBuilderService: FeedBuilderService,
+    @Inject(appConfig.KEY)
+    private readonly config: ConfigType<typeof appConfig>,
   ) {}
 
   async generateDemoFeed(
@@ -43,7 +47,7 @@ export class ProductFeedService {
 
       const feedEntity = new ProductFeedEntity({
         tenantId,
-        fileUrl: `/api/v1/feeds/${fileName}`,
+        fileUrl: `${this.config.baseUrl}/api/v1/feeds/${fileName}`,
         fileName,
         fileType,
         fileSize: Buffer.byteLength(feedContent, 'utf8'),

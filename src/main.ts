@@ -9,6 +9,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { GlobalExceptionFilter } from './shared/presentation/filters/exception.filter';
+import * as path from 'path';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -16,6 +18,12 @@ async function bootstrap() {
       trustProxy: true,
     }),
   );
+
+  await app.register(require('@fastify/static'), {
+    root: path.join(process.cwd(), 'uploads', 'feeds'),
+    prefix: '/api/v1/feeds/',
+    prefixAvoidTrailingSlash: true,
+  });
 
   app.use(morgan('dev'));
   app.useGlobalFilters(new GlobalExceptionFilter());
@@ -29,7 +37,6 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('Products Integration Platform')
     .setDescription(

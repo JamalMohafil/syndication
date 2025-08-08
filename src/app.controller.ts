@@ -9,4 +9,6 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  // Remove the /feeds/:file route - now handled by @fastify/static
 }

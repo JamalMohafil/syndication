@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { ProductFeedService } from '../../application/services/product-feed.service';
 import { FeedBuilderService } from '../../application/services/feed-builder.service';
 import * as path from 'path';
@@ -19,13 +19,13 @@ export class FeedUrlController {
   @ApiParam({ name: 'fileName', description: 'Feed file name' })
   async serveFeedFile(
     @Param('fileName') fileName: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const filePath = path.join(process.cwd(), 'uploads', 'feeds', fileName);
 
       if (!fs.existsSync(filePath)) {
-        return res.status(HttpStatus.NOT_FOUND).json({
+        return res.code(HttpStatus.NOT_FOUND).send({
           message: 'Feed file not found',
         });
       }
@@ -35,11 +35,11 @@ export class FeedUrlController {
         ? 'application/xml'
         : 'text/csv';
 
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-      res.send(fileContent);
+      res.header('Content-Type', contentType);
+      res.header('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      return res.code(HttpStatus.OK).send(fileContent);
     } catch (error) {
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.code(HttpStatus.INTERNAL_SERVER_ERROR).send({
         message: 'Error serving feed file',
         error: error.message,
       });
@@ -53,7 +53,7 @@ export class FeedUrlController {
   async generateDynamicFeed(
     @Param('tenantId') tenantId: string,
     @Param('platform') platform: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const products = this.feedBuilderService.generateDemoProducts(tenantId);
@@ -68,16 +68,16 @@ export class FeedUrlController {
         feedContent = this.feedBuilderService.generateMetaFeedCSV(products);
         contentType = 'text/csv';
       } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
+        return res.code(HttpStatus.BAD_REQUEST).send({
           message: 'Invalid platform. Use "google" or "meta"',
         });
       }
 
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
-      res.send(feedContent);
+      res.header('Content-Type', contentType);
+      res.header('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
+      return res.code(HttpStatus.OK).send(feedContent);
     } catch (error) {
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.code(HttpStatus.INTERNAL_SERVER_ERROR).send({
         message: 'Error generating dynamic feed',
         error: error.message,
       });
