@@ -17,7 +17,6 @@ export class GoogleMerchantService {
     try {
       this.googleOAuthService.setCredentials(accessToken, refreshToken);
 
-      // استخدام Merchant API v1beta - الطريقة الجديدة
       const merchantApi = google.merchantapi({
         version: 'accounts_v1beta',
         auth: this.googleOAuthService.getAuthClient(),
@@ -27,7 +26,7 @@ export class GoogleMerchantService {
         'Attempting to fetch merchant accounts using Merchant API v1beta',
       );
 
-    const response = await merchantApi.accounts.list();
+      const response = await merchantApi.accounts.list();
 
       if (response.data.accounts && response.data.accounts.length > 0) {
         return response.data.accounts.map((account: any) => ({
@@ -159,8 +158,12 @@ export class GoogleMerchantService {
     }
   }
 
-  async getProducts(accessToken: string, merchantId: string): Promise<any[]> {
-    this.googleOAuthService.setCredentials(accessToken);
+  async getProducts(
+    accessToken: string,
+    refreshToken: string,
+    merchantId: string,
+  ): Promise<any[]> {
+    this.googleOAuthService.setCredentials(accessToken, refreshToken);
     const content = google.content({
       version: 'v2.1',
       auth: this.googleOAuthService.getAuthClient(),
@@ -193,43 +196,127 @@ export class GoogleMerchantService {
       throw new Error(`Failed to upload product feed: ${error.message}`);
     }
   }
-
-  async createDataFeed(
+  async checkDataFeedStatus(
     accessToken: string,
+    refreshToken: string,
     merchantId: string,
-    feedName: string,
-    feedUrl: string,
+    feedId?: string,
   ): Promise<any> {
-    this.googleOAuthService.setCredentials(accessToken);
+    this.googleOAuthService.setCredentials(accessToken, refreshToken);
     const content = google.content({
       version: 'v2.1',
       auth: this.googleOAuthService.getAuthClient(),
     });
 
     try {
-      const response = await content.datafeeds.insert({
+      if (!feedId) {
+        const response = await content.datafeeds.list({
+          merchantId,
+        });
+        console.log('All data feeds:', JSON.stringify(response.data, null, 2));
+        return response.data;
+      }
+
+      const response = await content.datafeeds.get({
         merchantId,
-        requestBody: {
-          name: feedName,
-          contentType: 'products',
-          format: {
-            fileEncoding: 'utf-8',
-            columnDelimiter: ',',
-            quotingMode: 'value_quoting',
-          },
-          fetchSchedule: {
-            weekday: 'MONDAY',
-            hour: 6,
-            timeZone: 'UTC',
-          },
-          fileName: feedUrl,
-        },
+        datafeedId: feedId,
       });
+
+      console.log('Feed details:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
-      throw new BadRequestDomainException(
-        `Failed to create data feed: ${error.message}`,
-      );
+      console.error('Error checking feed status:', error.message);
+      throw new Error(`Failed to check feed status: ${error.message}`);
+    }
+  }
+  async createDataFeed(
+    accessToken: string,
+    refreshToken: string,
+    merchantId: string,
+    feedName: string,
+    feedUrl: string,
+    maxRetries: number = 3,
+  ): Promise<any> {
+    this.googleOAuthService.setCredentials(accessToken, refreshToken);
+
+    const content = google.content({
+      version: 'v2.1',
+      auth: this.googleOAuthService.getAuthClient(),
+      timeout: 30000,
+      retry: true,
+      retryConfig: {
+        retry: 3,
+        retryDelay: 1000,
+      },
+    });
+
+    const requestBody = {
+      name: feedName,
+      contentType: 'products',
+      fileName: `${feedName}.xml`,
+      attributeLanguage: 'en',
+
+      targets: [
+        {
+          country: 'US',
+          language: 'en',
+        },
+      ],
+
+      fetchSchedule: {
+        weekday: 'MONDAY',
+        hour: 6,
+        fetchUrl: feedUrl,
+        timeZone: 'UTC',
+      },
+    };
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(
+          `Attempting to create data feed - Attempt ${attempt}/${maxRetries}`,
+        );
+
+        const response = await content.datafeeds.insert({
+          merchantId,
+          requestBody,
+        });
+
+        console.log('Data feed created successfully:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+
+        const isNetworkError =
+          error.code === 'ECONNRESET' ||
+          error.code === 'ETIMEDOUT' ||
+          error.code === 'ENOTFOUND' ||
+          error.code === 'ECONNREFUSED' ||
+          error.response?.status >= 500 ||
+          error.message?.includes('timeout') ||
+          error.message?.includes('ECONNRESET');
+
+        if (attempt === maxRetries || !isNetworkError) {
+          if (!isNetworkError && error.response?.data) {
+            throw new BadRequestDomainException(
+              `Failed to create data feed: ${JSON.stringify(error.response.data)}`,
+            );
+          }
+
+          throw new BadRequestDomainException(
+            `Failed to create data feed after ${maxRetries} attempts: ${error.message}`,
+          );
+        }
+
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        console.log(`Waiting ${waitTime}ms before retry...`);
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
     }
   }
 }

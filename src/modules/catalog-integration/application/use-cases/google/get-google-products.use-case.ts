@@ -47,6 +47,7 @@ export class GetGoogleProductsUseCase {
 
     return await this.googleMerchantAdapter.getProducts(
       integration.accessToken,
+      integration.refreshToken!,
       finalMerchantId,
     );
   }

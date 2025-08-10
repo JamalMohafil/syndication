@@ -20,6 +20,7 @@ import { GoogleOAuthService } from '../../infrastructure/external-services/googl
 import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
 import { CreateDataFeedUseCase } from '../../application/use-cases/google/create-data-feed.use-case';
 import { GetGoogleProductsUseCase } from '../../application/use-cases/google/get-google-products.use-case';
+import { CheckDataFeedStatusUseCase } from '../../application/use-cases/google/check-data-feed-status.use-case';
 
 @ApiTags('Google Integration')
 @Controller('google')
@@ -29,6 +30,7 @@ export class GoogleIntegrationController {
   constructor(
     private readonly getMerchantAccountsUseCase: GetMerchantAccountsUseCase,
     private readonly createDataFeedUseCase: CreateDataFeedUseCase,
+    private readonly checkDataFeedStatusUseCase: CheckDataFeedStatusUseCase,
     private readonly getGoogleProductsUseCase: GetGoogleProductsUseCase,
   ) {}
 
@@ -41,6 +43,14 @@ export class GoogleIntegrationController {
     const tenantId = (req as any).tenantId;
 
     const res = await this.getMerchantAccountsUseCase.execute({ tenantId });
+    return res;
+  }
+  
+  @Get('datafeedStatus')
+  async getDatafeedStatus(@Req() req: FastifyRequest) {
+    const tenantId = (req as any).tenantId;
+
+    const res = await this.checkDataFeedStatusUseCase.execute(tenantId);
     return res;
   }
 
