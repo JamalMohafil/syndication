@@ -13,8 +13,6 @@ export interface GetMerchantAccountsRequest {
   merchantId?: string;
 }
 
- 
-
 @Injectable()
 export class GetMerchantAccountsUseCase {
   constructor(
@@ -34,7 +32,7 @@ export class GetMerchantAccountsUseCase {
         PlatformType.GOOGLE,
       );
 
-    if (!integration) {
+    if (!integration || !integration.externalId) {
       throw new NotFoundDomainException('Google integration not found');
     }
 
@@ -46,9 +44,10 @@ export class GetMerchantAccountsUseCase {
       integration.accessToken,
       integration.refreshToken,
     );
-
     const res = await this.googleMerchantService.getMerchantCenterAccounts(
       integration.accessToken,
+      integration.externalId,
+      integration.refreshToken,
     );
 
     return res;

@@ -3,4 +3,7 @@ export interface MerchantCenterAccount {
   name: string;
   websiteUrl: string;
   adultContent: boolean;
+  kind?: string;
+  users?: any;
+  sellerId?: string;
 }

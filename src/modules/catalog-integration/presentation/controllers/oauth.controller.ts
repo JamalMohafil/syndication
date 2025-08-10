@@ -98,7 +98,7 @@ export class OAuthController {
   @UseGuards(TenantAuthGuard)
   async getGoogleMerchantAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
-
+    
     const response = await this.getGoogleMerchantAccountsUseCase.execute({
       tenantId,
     });

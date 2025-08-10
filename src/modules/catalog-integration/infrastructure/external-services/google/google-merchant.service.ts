@@ -57,14 +57,15 @@ export class GoogleMerchantService {
 
   async getMerchantCenterAccounts(
     accessToken: string,
-    merchantId?: string,
+    merchantId: string,
+    refreshToken?: string,
   ): Promise<MerchantCenterAccount[]> {
     if (!merchantId) {
       console.warn('No merchantId provided - cannot fetch merchant accounts');
       return [];
     }
 
-    this.googleOAuthService.setCredentials(accessToken);
+    this.googleOAuthService.setCredentials(accessToken, refreshToken);
     const content = google.content({
       version: 'v2.1',
       auth: this.googleOAuthService.getAuthClient(),
@@ -74,16 +75,36 @@ export class GoogleMerchantService {
       const response = await content.accounts.list({
         merchantId: merchantId,
       });
-
+      console.log(response, 'response');
       return (
         response.data.resources?.map((account) => ({
           id: account.id ?? '',
           name: account.name ?? '',
           websiteUrl: account.websiteUrl ?? '',
           adultContent: account.adultContent || false,
+          kind: account.kind || '',
+          users: account.users,
+          sellerId: account.sellerId || '',
         })) || []
       );
     } catch (error) {
+      if (error.message?.includes('is not a multi-client account')) {
+        const account = await content.accounts.get({
+          merchantId,
+          accountId: merchantId,
+        });
+        return [
+          {
+            id: account.data.id ?? '',
+            name: account.data.name ?? '',
+            websiteUrl: account.data.websiteUrl ?? '',
+            adultContent: account.data.adultContent || false,
+            kind: account.data.kind || '',
+            users: account.data.users,
+            sellerId: account.data.sellerId || '',
+          },
+        ];
+      }
       console.error('Failed to fetch Merchant Center accounts:', error);
       return [];
     }
@@ -109,8 +130,11 @@ export class GoogleMerchantService {
         return {
           id: response.data.id ?? '',
           name: response.data.name ?? '',
+          kind: response.data.kind ?? '',
           websiteUrl: response.data.websiteUrl ?? '',
           adultContent: response.data.adultContent || false,
+          users: response.data.users,
+          sellerId: response.data.sellerId || '',
         };
       }
       return null;
