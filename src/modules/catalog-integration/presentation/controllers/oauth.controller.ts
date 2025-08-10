@@ -170,17 +170,5 @@ export class OAuthController {
     };
   }
 
-  private mapToResponseDto(integration: any): IntegrationResponseDto {
-    return {
-      id: integration.id || '',
-      tenantId: integration.tenantId,
-      platform: integration.platform,
-      externalId: integration.externalId,
-      status: integration.status,
-      tokenExpiresAt: integration.tokenExpiresAt,
-      platformConfigs: integration.platformConfigs,
-      createdAt: integration.createdAt || new Date(),
-      updatedAt: integration.updatedAt || new Date(),
-    };
-  }
+ 
 }
