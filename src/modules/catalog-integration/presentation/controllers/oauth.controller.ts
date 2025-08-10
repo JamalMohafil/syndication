@@ -36,8 +36,7 @@ import { ConnectIntegrationDto } from '../dto/connect-integration.dto';
 import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
 import { GenerateAuthUrlUseCase } from '../../application/use-cases/auth/generate-auth-url.use-case';
 import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
-import { SetupMerchantAccountUseCase } from '../../application/use-cases/google/setup-merchant-account.use-case';
-import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
+ import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
 import { ConnectPlatformUseCase } from '../../application/use-cases/auth/connect-platform.use-case';
 import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
 import appConfig from 'src/shared/infrastructure/config/app.config';
@@ -50,8 +49,7 @@ export class OAuthController {
   constructor(
     private readonly getAuthUrlUseCase: GenerateAuthUrlUseCase,
     private readonly getGoogleMerchantAccountsUseCase: GetMerchantAccountsUseCase,
-    private readonly setupMerchantAccountUseCase: SetupMerchantAccountUseCase,
-    private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
+     private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
     private readonly connectPlatformUseCase: ConnectPlatformUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
     @Inject(appConfig.KEY)
@@ -110,28 +108,7 @@ export class OAuthController {
     };
   }
 
-  @Post('google/setup-merchant')
-  @ApiOperation({
-    summary: 'Setup Google Merchant Center account',
-    description: 'Configure the merchant center account to use for shopping',
-  })
-  async setupGoogleMerchant(
-    @Body() body: { merchantId: string },
-    @Req() req: FastifyRequest,
-  ) {
-    const tenantId = (req as any).tenantId;
-
-    const result = await this.setupMerchantAccountUseCase.execute({
-      tenantId,
-      merchantId: body.merchantId,
-    });
-
-    return {
-      success: true,
-      integration: this.mapToResponseDto(result.integration),
-      accountInfo: result.accountInfo,
-    };
-  }
+ 
 
   @Get('callback/:platform')
   @ApiOperation({
