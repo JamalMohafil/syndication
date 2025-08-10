@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { META_ACCESS_TOKEN } from 'src/modules/catalog-integration/presentation/controllers/meta.controller';
+import { CreateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-catalog.dto';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 
 export interface MetaCatalog {
@@ -60,65 +62,101 @@ export class MetaCatalogService {
 
   constructor(private configService: ConfigService) {}
 
+  async createCatalog(
+    businessId: string,
+    catalogData: CreateMetaCatalogDto,
+    accessToken: string,
+  ): Promise<any> {
+    try {
+      const url = `${this.baseUrl}/${this.version}/${businessId}/owned_product_catalogs?access_token=${accessToken}`;
+
+      const requestData = {
+        name: catalogData.name,
+        vertical: catalogData.vertical || 'commerce',
+        ...(catalogData.feed_count_limit && {
+          feed_count_limit: catalogData.feed_count_limit,
+        }),
+        ...(catalogData.item_count_limit && {
+          item_count_limit: catalogData.item_count_limit,
+        }),
+      };
+
+      const response = await axios.post(url, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Meta API error:', error.response?.data || error.message);
+      throw new BadRequestDomainException(
+        `Failed to create catalog: ${error.response?.data || error.message}`,
+      );
+    }
+  }
+
   async getCatalogs(
     accessToken: string,
     businessId?: string,
   ): Promise<MetaCatalog[]> {
     try {
-      const endpoint = businessId
-        ? `${this.baseUrl}/${this.version}/${businessId}/owned_product_catalogs`
-        : `${this.baseUrl}/${this.version}/me/businesses`;
-
       if (!businessId) {
-        const businessResponse = await axios.get(endpoint, {
-          params: {
-            access_token: accessToken,
-            fields: 'id,name',
+        const businessResponse = await axios.get(
+          `${this.baseUrl}/${this.version}/me/businesses`,
+          {
+            params: {
+              access_token: accessToken,
+              fields:
+                'id,name,owned_product_catalogs{id,name,product_count,business,feed_count,is_catalog_segment,vertical}',
+            },
           },
-        });
+        );
 
         const businesses = businessResponse.data.data || [];
         const allCatalogs: MetaCatalog[] = [];
+
         for (const business of businesses) {
-          try {
-            const catalogResponse = await axios.get(
-              `${this.baseUrl}/${this.version}/${business.id}/owned_product_catalogs`,
-              {
-                params: {
-                  access_token: accessToken,
-                  fields:
-                    'id,name,product_count,business,feed_count,is_catalog_segment,vertical',
-                },
-              },
-            );
-            allCatalogs.push(...(catalogResponse.data.data || []));
-          } catch (error) {
-            console.warn(
-              `Failed to get catalogs for business ${business.id}:`,
-              error.message,
-            );
+          if (
+            business.owned_product_catalogs &&
+            business.owned_product_catalogs.data
+          ) {
+            allCatalogs.push(...business.owned_product_catalogs.data);
           }
         }
 
         return allCatalogs;
       } else {
-        const response = await axios.get(endpoint, {
-          params: {
-            access_token: accessToken,
-            fields:
-              'id,name,product_count,business,feed_count,is_catalog_segment,vertical',
+        const businessResponse = await axios.get(
+          `${this.baseUrl}/${this.version}/me/businesses`,
+          {
+            params: {
+              access_token: accessToken,
+              fields: `id,name,owned_product_catalogs{id,name,product_count,business,feed_count,is_catalog_segment,vertical}`,
+            },
           },
-        });
+        );
 
-        return response.data.data || [];
+        const businesses = businessResponse.data.data || [];
+        const targetBusiness = businesses.find((b) => b.id === businessId);
+
+        if (!targetBusiness) {
+          console.warn(`Business ${businessId} not found or no access`);
+          return [];
+        }
+
+        return targetBusiness.owned_product_catalogs?.data || [];
       }
     } catch (error) {
+      console.error(
+        'Error getting catalogs:',
+        error.response?.data || error.message,
+      );
       throw new BadRequestDomainException(
         `Failed to get Meta catalogs: ${error.response?.data?.error?.message || error.message}`,
       );
     }
   }
-
   async getCatalogById(
     catalogId: string,
     accessToken: string,
@@ -143,7 +181,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Get products from a catalog
   async getCatalogProducts(
     catalogId: string,
     accessToken: string,
@@ -181,7 +218,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Create a new product in catalog
   async createProduct(
     catalogId: string,
     productData: CreateProductRequest,
@@ -220,7 +256,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Update an existing product
   async updateProduct(
     productId: string,
     productData: Partial<CreateProductRequest>,
@@ -245,7 +280,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Delete a product
   async deleteProduct(
     productId: string,
     accessToken: string,
@@ -268,7 +302,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Get a specific product by ID
   async getProduct(
     productId: string,
     accessToken: string,
@@ -293,7 +326,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Bulk upload products (up to 5000 products)
   async bulkUploadProducts(
     catalogId: string,
     products: CreateProductRequest[],
@@ -336,7 +368,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Check batch upload status
   async getBatchStatus(batchHandle: string, accessToken: string): Promise<any> {
     try {
       const response = await axios.get(
@@ -356,7 +387,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Search products in catalog
   async searchProducts(
     catalogId: string,
     query: string,
@@ -387,7 +417,6 @@ export class MetaCatalogService {
     }
   }
 
-  // Get catalog insights/analytics
   async getCatalogInsights(
     catalogId: string,
     accessToken: string,

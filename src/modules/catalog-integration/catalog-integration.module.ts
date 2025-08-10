@@ -32,6 +32,7 @@ import { TokenRefreshProcessor } from './infrastructure/processors/token-refresh
 import { BullModule } from '@nestjs/bullmq';
 import { MetaCatalogService } from './infrastructure/external-services/meta/meta-catalog.service';
 import { CheckDataFeedStatusUseCase } from './application/use-cases/google/check-data-feed-status.use-case';
+import { CreateMetaCatalogUseCase } from './application/use-cases/meta/create-meta-catalog.use-case';
 
 const useCases = [
   GenerateAuthUrlUseCase,
@@ -50,6 +51,7 @@ const useCases = [
   RefreshExpiredTokensUseCase,
   GetTenantIntegrationsUseCase,
   CheckDataFeedStatusUseCase,
+  CreateMetaCatalogUseCase,
   CreateDataFeedUseCase,
 ];
 @Module({

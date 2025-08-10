@@ -45,7 +45,7 @@ export class GoogleIntegrationController {
     const res = await this.getMerchantAccountsUseCase.execute({ tenantId });
     return res;
   }
-  
+
   @Get('datafeedStatus')
   async getDatafeedStatus(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;

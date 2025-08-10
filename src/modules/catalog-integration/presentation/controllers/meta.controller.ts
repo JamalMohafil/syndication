@@ -29,6 +29,8 @@ import {
   MetaCatalogService,
   CreateProductRequest,
 } from '../../infrastructure/external-services/meta/meta-catalog.service';
+ import { CreateMetaCatalogUseCase } from '../../application/use-cases/meta/create-meta-catalog.use-case';
+import { CreateMetaCatalogDto } from '../dto/create-meta-catalog.dto';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -42,6 +44,7 @@ export class MetaIntegrationController {
     private readonly getBusinessAccountsUseCase: GetBusinessAccountsUseCase,
     private readonly getMetaIntegrationUseCase: GetMetaIntegrationUseCase,
     private readonly getMetaCatalogsUseCase: GetMetaCatalogsUseCase,
+    private readonly createMetaCatalogUseCase: CreateMetaCatalogUseCase,
     private readonly metaCatalogService: MetaCatalogService,
   ) {}
 
@@ -57,6 +60,137 @@ export class MetaIntegrationController {
     });
     return res;
   }
+
+  @Post('business/:businessId/catalogs')
+  @ApiOperation({
+    summary: 'Create new catalog',
+    description: 'Create a new product catalog for a business account.',
+  })
+  @ApiParam({ name: 'businessId', description: 'Business Account ID' })
+  @ApiBody({
+    description: 'Catalog creation data',
+    schema: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', description: 'Catalog name' },
+        vertical: {
+          type: 'string',
+          enum: [
+            'commerce',
+            'hotels',
+            'flights',
+            'destinations',
+            'home_listings',
+            'vehicles',
+            'media',
+          ],
+          default: 'commerce',
+          description: 'Catalog vertical',
+        },
+        feed_count_limit: {
+          type: 'number',
+          description: 'Maximum number of feeds',
+        },
+        item_count_limit: {
+          type: 'number',
+          description: 'Maximum number of items',
+        },
+        additional_vertical_option: {
+          type: 'string',
+          enum: ['FOOD_DELIVERY'],
+          description: 'Additional vertical option',
+        },
+      },
+    },
+  })
+  async createCatalog(
+    @Req() req: FastifyRequest,
+    @Param('businessId') businessId: string,
+    @Body() catalogData: CreateMetaCatalogDto,
+  ) {
+    const tenantId = (req as any).tenantId;
+    const res = await this.createMetaCatalogUseCase.execute(
+      tenantId,
+      businessId,
+      catalogData,
+    );
+
+    return res;
+  }
+
+  // @Put('catalogs/:catalogId')
+  // @ApiOperation({
+  //   summary: 'Update catalog',
+  //   description: 'Update an existing catalog details.',
+  // })
+  // @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
+  // @ApiBody({
+  //   description: 'Catalog update data',
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       name: { type: 'string', description: 'Catalog name' },
+  //       vertical: {
+  //         type: 'string',
+  //         enum: [
+  //           'commerce',
+  //           'hotels',
+  //           'flights',
+  //           'destinations',
+  //           'home_listings',
+  //           'vehicles',
+  //           'media',
+  //         ],
+  //         description: 'Catalog vertical',
+  //       },
+  //       feed_count_limit: {
+  //         type: 'number',
+  //         description: 'Maximum number of feeds',
+  //       },
+  //       item_count_limit: {
+  //         type: 'number',
+  //         description: 'Maximum number of items',
+  //       },
+  //       additional_vertical_option: {
+  //         type: 'string',
+  //         enum: ['FOOD_DELIVERY'],
+  //         description: 'Additional vertical option',
+  //       },
+  //     },
+  //   },
+  // })
+  // async updateCatalog(
+  //   @Req() req: FastifyRequest,
+  //   @Param('catalogId') catalogId: string,
+  //   @Body() catalogData: UpdateCatalogRequest,
+  // ) {
+  //   const integration = await this.getMetaIntegration((req as any).tenantId);
+
+  //   return await this.metaCatalogService.updateCatalog(
+  //     catalogId,
+  //     catalogData,
+  //     integration.accessToken,
+  //   );
+  // }
+
+  // @Delete('catalogs/:catalogId')
+  // @ApiOperation({
+  //   summary: 'Delete catalog',
+  //   description: 'Delete a catalog completely.',
+  // })
+  // @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
+  // async deleteCatalog(
+  //   @Req() req: FastifyRequest,
+  //   @Param('catalogId') catalogId: string,
+  // ) {
+  //   const integration = await this.getMetaIntegration((req as any).tenantId);
+
+  //   return await this.metaCatalogService.deleteCatalog(
+  //     catalogId,
+  //     integration.accessToken,
+  //   );
+  // }
 
   @Get('catalogs')
   @ApiOperation({
