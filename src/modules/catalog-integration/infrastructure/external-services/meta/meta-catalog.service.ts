@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { META_ACCESS_TOKEN } from 'src/modules/catalog-integration/presentation/controllers/meta.controller';
 import { CreateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-catalog.dto';
+import { UpdateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/update-meta-catalog.dto';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 
 export interface MetaCatalog {
@@ -73,12 +74,6 @@ export class MetaCatalogService {
       const requestData = {
         name: catalogData.name,
         vertical: catalogData.vertical || 'offline_commerce',
-        ...(catalogData.feed_count_limit && {
-          feed_count_limit: catalogData.feed_count_limit,
-        }),
-        ...(catalogData.item_count_limit && {
-          item_count_limit: catalogData.item_count_limit,
-        }),
       };
 
       const response = await axios.post(url, requestData, {
@@ -149,6 +144,102 @@ export class MetaCatalogService {
 
       throw new BadRequestDomainException(
         `Failed to delete catalog: ${error.response?.data?.error?.message || error.message}`,
+      );
+    }
+  }
+  async updateCatalog(
+    accessToken: string,
+    catalogId: string,
+    catalogData: UpdateMetaCatalogDto,
+  ): Promise<{ success: boolean; message: string; catalog?: MetaCatalog }> {
+    console.log('Updating catalog with ID:', catalogId, 'Data:', catalogData);
+
+    try {
+      const updatePayload: any = {};
+
+      if (catalogData.name !== undefined && catalogData.name.trim() !== '') {
+        updatePayload.name = catalogData.name.trim();
+      }
+
+      if (catalogData.vertical !== undefined) {
+        updatePayload.vertical = catalogData.vertical;
+      }
+
+      if (Object.keys(updatePayload).length === 0) {
+        throw new BadRequestDomainException('No valid update data provided');
+      }
+
+      const response = await axios.post(
+        `${this.baseUrl}/${this.version}/${catalogId}`,
+        updatePayload,
+        {
+          params: {
+            access_token: accessToken,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.data.success) {
+        try {
+          const updatedCatalog = await this.getCatalogById(
+            accessToken,
+            catalogId,
+          );
+          return {
+            success: true,
+            message: `Catalog ${catalogId} updated successfully`,
+            catalog: updatedCatalog,
+          };
+        } catch (fetchError) {
+          console.warn('Failed to fetch updated catalog data:', fetchError);
+          return {
+            success: true,
+            message: `Catalog ${catalogId} updated successfully`,
+          };
+        }
+      } else {
+        throw new BadRequestDomainException(
+          `Failed to update catalog ${catalogId}`,
+        );
+      }
+    } catch (error) {
+      console.error('Error updating catalog:', error);
+
+      if (error.response?.status === 404) {
+        throw new BadRequestDomainException(
+          `Catalog ID "${catalogId}" not found`,
+        );
+      }
+
+      if (error.response?.status === 403) {
+        throw new BadRequestDomainException(
+          `No permission to update catalog "${catalogId}"`,
+        );
+      }
+
+      if (error.response?.status === 400) {
+        const errorMessage =
+          error.response?.data?.error?.message || 'Invalid request data';
+        throw new BadRequestDomainException(
+          `Failed to update catalog "${catalogId}": ${errorMessage}`,
+        );
+      }
+
+      if (error.response?.status === 429) {
+        throw new BadRequestDomainException(
+          'Rate limit exceeded. Please try again later',
+        );
+      }
+
+      if (error instanceof BadRequestDomainException) {
+        throw error;
+      }
+
+      throw new BadRequestDomainException(
+        `Failed to update catalog: ${error.response?.data?.error?.message || error.message}`,
       );
     }
   }

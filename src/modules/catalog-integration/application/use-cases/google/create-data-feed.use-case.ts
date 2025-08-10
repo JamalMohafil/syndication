@@ -32,7 +32,7 @@ export class CreateDataFeedUseCase {
     if (!integration) {
       throw new NotFoundDomainException('Google integration not found');
     }
-
+    
     if (!integration.isActive()) {
       throw new BadRequestDomainException('Google integration is not active');
     }

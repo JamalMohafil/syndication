@@ -32,6 +32,8 @@ import {
 import { CreateMetaCatalogUseCase } from '../../application/use-cases/meta/create-meta-catalog.use-case';
 import { CreateMetaCatalogDto } from '../dto/create-meta-catalog.dto';
 import { DeleteMetaCatalogUseCase } from '../../application/use-cases/meta/delete-meta-catalog.use-case';
+import { UpdateMetaCatalogDto } from '../dto/update-meta-catalog.dto';
+import { UpdateMetaCatalogUseCase } from '../../application/use-cases/meta/update-meta-catalog.use-case';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -47,6 +49,7 @@ export class MetaIntegrationController {
     private readonly getMetaCatalogsUseCase: GetMetaCatalogsUseCase,
     private readonly createMetaCatalogUseCase: CreateMetaCatalogUseCase,
     private readonly deleteMetaCatalogUseCase: DeleteMetaCatalogUseCase,
+    private readonly updateMetaCatalogUseCase: UpdateMetaCatalogUseCase,
     private readonly metaCatalogService: MetaCatalogService,
   ) {}
 
@@ -90,19 +93,6 @@ export class MetaIntegrationController {
           default: 'commerce',
           description: 'Catalog vertical',
         },
-        feed_count_limit: {
-          type: 'number',
-          description: 'Maximum number of feeds',
-        },
-        item_count_limit: {
-          type: 'number',
-          description: 'Maximum number of items',
-        },
-        additional_vertical_option: {
-          type: 'string',
-          enum: ['FOOD_DELIVERY'],
-          description: 'Additional vertical option',
-        },
       },
     },
   })
@@ -121,60 +111,46 @@ export class MetaIntegrationController {
     return res;
   }
 
-  // @Put('catalogs/:catalogId')
-  // @ApiOperation({
-  //   summary: 'Update catalog',
-  //   description: 'Update an existing catalog details.',
-  // })
-  // @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
-  // @ApiBody({
-  //   description: 'Catalog update data',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       name: { type: 'string', description: 'Catalog name' },
-  //       vertical: {
-  //         type: 'string',
-  //         enum: [
-  //           'commerce',
-  //           'hotels',
-  //           'flights',
-  //           'destinations',
-  //           'home_listings',
-  //           'vehicles',
-  //           'media',
-  //         ],
-  //         description: 'Catalog vertical',
-  //       },
-  //       feed_count_limit: {
-  //         type: 'number',
-  //         description: 'Maximum number of feeds',
-  //       },
-  //       item_count_limit: {
-  //         type: 'number',
-  //         description: 'Maximum number of items',
-  //       },
-  //       additional_vertical_option: {
-  //         type: 'string',
-  //         enum: ['FOOD_DELIVERY'],
-  //         description: 'Additional vertical option',
-  //       },
-  //     },
-  //   },
-  // })
-  // async updateCatalog(
-  //   @Req() req: FastifyRequest,
-  //   @Param('catalogId') catalogId: string,
-  //   @Body() catalogData: UpdateCatalogRequest,
-  // ) {
-  //   const integration = await this.getMetaIntegration((req as any).tenantId);
-
-  //   return await this.metaCatalogService.updateCatalog(
-  //     catalogId,
-  //     catalogData,
-  //     integration.accessToken,
-  //   );
-  // }
+  @Put('catalogs/:catalogId')
+  @ApiOperation({
+    summary: 'Update catalog',
+    description: 'Update an existing catalog details.',
+  })
+  @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
+  @ApiBody({
+    description: 'Catalog update data',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Catalog name' },
+        vertical: {
+          type: 'string',
+          enum: [
+            'commerce',
+            'hotels',
+            'flights',
+            'destinations',
+            'home_listings',
+            'vehicles',
+            'media',
+          ],
+          description: 'Catalog vertical',
+        },
+      },
+    },
+  })
+  async updateCatalog(
+    @Req() req: FastifyRequest,
+    @Param('catalogId') catalogId: string,
+    @Body() catalogData: UpdateMetaCatalogDto,
+  ) {
+    const res = await this.updateMetaCatalogUseCase.execute(
+      (req as any).tenantId,
+      catalogId,
+      catalogData,
+    );
+    return res;
+  }
 
   @Delete('catalogs/:catalogId')
   @ApiOperation({
