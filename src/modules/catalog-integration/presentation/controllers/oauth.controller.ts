@@ -32,13 +32,11 @@ import { MetaOAuthService } from '../../infrastructure/external-services/meta/me
 import { AuthUrlResponseDto } from '../responses/auth-url.response';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { ConnectIntegrationDto } from '../dto/connect-integration.dto';
-import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
+ import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
 import { GenerateAuthUrlUseCase } from '../../application/use-cases/auth/generate-auth-url.use-case';
 import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
- import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
-import { ConnectPlatformUseCase } from '../../application/use-cases/auth/connect-platform.use-case';
-import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
+import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
+ import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
 import appConfig from 'src/shared/infrastructure/config/app.config';
 import { ConfigType } from '@nestjs/config';
 import { repl } from '@nestjs/core';
@@ -49,13 +47,12 @@ export class OAuthController {
   constructor(
     private readonly getAuthUrlUseCase: GenerateAuthUrlUseCase,
     private readonly getGoogleMerchantAccountsUseCase: GetMerchantAccountsUseCase,
-     private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
-    private readonly connectPlatformUseCase: ConnectPlatformUseCase,
-    private readonly testConnectionUseCase: TestConnectionUseCase,
+    private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
+     private readonly testConnectionUseCase: TestConnectionUseCase,
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
   ) {}
- 
+
   @Get('auth-url/:platform')
   @ApiOperation({
     summary: 'Get OAuth authorization URL',
@@ -108,8 +105,6 @@ export class OAuthController {
     };
   }
 
- 
-
   @Get('callback/:platform')
   @ApiOperation({
     summary: 'Handle OAuth callback',
@@ -135,7 +130,7 @@ export class OAuthController {
       tenantId,
       error,
     });
-     if (!result.success) {
+    if (!result.success) {
       return reply.redirect(
         `${frontendUrl}/integrations/error?message=${encodeURIComponent(
           result.errorMessage || 'Unknown error',
@@ -147,29 +142,6 @@ export class OAuthController {
     return reply.redirect(
       `${frontendUrl}/integrations/success?platform=${platform.toLowerCase()}&id=${result.integrationId}`,
     );
-  }
-
-  @Post('connect')
-  @ApiOperation({
-    summary: 'Connect platform integration manually',
-    description:
-      'Complete the OAuth flow manually by providing authorization code.',
-  })
-  @ApiBearerAuth()
-  @UseGuards(TenantAuthGuard)
-  async connectIntegration(
-    @Body() connectDto: ConnectIntegrationDto,
-    @Req() req: FastifyRequest,
-  ): Promise<IntegrationResponseDto> {
-    const tenantId = (req as any).tenantId;
-
-    const integration = await this.connectPlatformUseCase.execute({
-      tenantId,
-      platform: connectDto.platform,
-      authCode: connectDto.authCode,
-    });
-
-    return this.mapToResponseDto(integration);
   }
 
   @Post('test-connection/:platform')

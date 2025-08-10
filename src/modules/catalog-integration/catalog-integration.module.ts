@@ -16,11 +16,10 @@ import { GetMerchantAccountsUseCase } from './application/use-cases/google/get-m
 import { RefreshTokensUseCase } from './application/use-cases/auth/refresh-tokens.use-case';
 import { TestConnectionUseCase } from './application/use-cases/auth/test-connection.use-case';
 import { GetIntergrationsUseCase } from './application/use-cases/integration/get-integrations.use-case';
- import { HandleOAuthCallbackUseCase } from './application/use-cases/auth/handle-oauth-callback.use-case';
+import { HandleOAuthCallbackUseCase } from './application/use-cases/auth/handle-oauth-callback.use-case';
 import { GetMetaCatalogsUseCase } from './application/use-cases/meta/get-meta-catalogs.use-case';
 import { GetBusinessAccountsUseCase } from './application/use-cases/meta/get-business-accounts.use-case';
 import { GetMetaIntegrationUseCase } from './application/use-cases/meta/get-meta-integration.use-case';
-import { ConnectPlatformUseCase } from './application/use-cases/auth/connect-platform.use-case';
 import { CreateDataFeedUseCase } from './application/use-cases/google/create-data-feed.use-case';
 import { GetGoogleProductsUseCase } from './application/use-cases/google/get-google-products.use-case';
 import { GetPlatformIntegrationUseCase } from './application/use-cases/integration/get-platform-integration.use-case';
@@ -39,7 +38,7 @@ const useCases = [
   RefreshTokensUseCase,
   TestConnectionUseCase,
   GetIntergrationsUseCase,
-   HandleOAuthCallbackUseCase,
+  HandleOAuthCallbackUseCase,
   GetMetaCatalogsUseCase,
   GetBusinessAccountsUseCase,
   GetMetaIntegrationUseCase,
@@ -50,7 +49,6 @@ const useCases = [
   RefreshExpiredTokensUseCase,
   GetTenantIntegrationsUseCase,
 
-  ConnectPlatformUseCase,
   CreateDataFeedUseCase,
 ];
 @Module({
