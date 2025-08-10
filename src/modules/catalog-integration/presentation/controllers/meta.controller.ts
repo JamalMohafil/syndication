@@ -35,6 +35,7 @@ import { CreateProductDto } from '../dto/create-meta-product.dto';
 import { CreateMetaProductUseCase } from '../../application/use-cases/meta/create-meta-product.use-case';
 import { UpdateMetaProductUseCase } from '../../application/use-cases/meta/update-meta-product.use-case';
 import { UpdateProductDto } from '../dto/update-meta-product.dto';
+import { CatalogInsightsInterface } from '../../domain/types/catalog-insights.interface';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -389,7 +390,7 @@ export class MetaIntegrationController {
     @Param('catalogId') catalogId: string,
     @Query('since') since?: string,
     @Query('until') until?: string,
-  ) {
+  ): Promise<CatalogInsightsInterface> {
     const integration = await this.getMetaIntegration((req as any).tenantId);
 
     const dateRange = since && until ? { since, until } : undefined;

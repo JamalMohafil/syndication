@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import {
+  ApiError,
+  CatalogInsightsInterface,
+} from 'src/modules/catalog-integration/domain/types/catalog-insights.interface';
 import { META_ACCESS_TOKEN } from 'src/modules/catalog-integration/presentation/controllers/meta.controller';
 import { CreateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-catalog.dto';
 import { CreateProductDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-product.dto';
@@ -929,24 +933,220 @@ export class MetaCatalogService {
     catalogId: string,
     accessToken: string,
     dateRange?: { since: string; until: string },
-  ): Promise<any> {
+  ): Promise<CatalogInsightsInterface> {
     try {
-      const params: any = {
-        access_token: accessToken,
-        metric: 'catalog_segment_product_total,catalog_segment_product_count',
+      const results = await Promise.allSettled([
+         axios.get(`${this.baseUrl}/${this.version}/${catalogId}`, {
+          params: {
+            access_token: accessToken,
+            fields: 'id,name,product_count,vertical',
+          },
+        }),
+
+         axios.get(`${this.baseUrl}/${this.version}/${catalogId}/products`, {
+          params: {
+            access_token: accessToken,
+            fields:
+              'id,name,description,brand,category,price,currency,availability,condition,image_url,url,retailer_id',
+            limit: 1000,
+          },
+        }),
+
+         axios.get(`${this.baseUrl}/${this.version}/${catalogId}/product_sets`, {
+          params: {
+            access_token: accessToken,
+            fields: 'id,name,product_count,filter',
+          },
+        }),
+
+         axios.get(
+          `${this.baseUrl}/${this.version}/${catalogId}/product_feeds`,
+          {
+            params: {
+              access_token: accessToken,
+              fields: 'id,name,product_count,schedule,country,file_name',
+            },
+          },
+        ),
+      ]);
+
+       const catalogInfo =
+        results[0].status === 'fulfilled' ? results[0].value.data : {};
+      const productsResponse =
+        results[1].status === 'fulfilled'
+          ? results[1].value.data
+          : { data: [] };
+      const productSets =
+        results[2].status === 'fulfilled'
+          ? results[2].value.data
+          : { data: [] };
+      const productFeeds =
+        results[3].status === 'fulfilled'
+          ? results[3].value.data
+          : { data: [] };
+
+      const products = productsResponse.data || [];
+
+       const productAnalysis = {
+        total_products: products.length,
+        brands_count: [
+          ...new Set(products.map((p: any) => p.brand).filter(Boolean)),
+        ].length,
+        categories_count: [
+          ...new Set(products.map((p: any) => p.category).filter(Boolean)),
+        ].length,
+        currencies: [
+          ...new Set(
+            products
+              .map((p: any) => p.currency)
+              .filter((c): c is string => Boolean(c)),
+          ),
+        ] as string[],
+
+        availability_breakdown: {
+          in_stock: products.filter((p: any) => p.availability === 'in stock')
+            .length,
+          out_of_stock: products.filter(
+            (p: any) => p.availability === 'out of stock',
+          ).length,
+          preorder: products.filter((p: any) => p.availability === 'preorder')
+            .length,
+          discontinued: products.filter(
+            (p: any) => p.availability === 'discontinued',
+          ).length,
+        },
+
+        condition_breakdown: {
+          new: products.filter((p: any) => p.condition === 'new').length,
+          refurbished: products.filter(
+            (p: any) => p.condition === 'refurbished',
+          ).length,
+          used: products.filter((p: any) => p.condition === 'used').length,
+        },
+
+        price_analysis: (() => {
+          const prices = products
+            .map((p: any) => parseFloat(p.price))
+            .filter((p: number) => !isNaN(p) && p > 0);
+          if (prices.length === 0) return { min: 0, max: 0, average: 0 };
+
+          return {
+            min: Math.min(...prices),
+            max: Math.max(...prices),
+            average:
+              Math.round(
+                (prices.reduce((sum, price) => sum + price, 0) /
+                  prices.length) *
+                  100,
+              ) / 100,
+          };
+        })(),
+
+        top_brands: (() => {
+          const brandCounts: Record<string, number> = {};
+          products.forEach((p: any) => {
+            if (p.brand) {
+              brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1;
+            }
+          });
+          return Object.entries(brandCounts)
+            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .slice(0, 10)
+            .map(([brand, count]) => ({ brand, count: count as number }));
+        })(),
+
+        top_categories: (() => {
+          const categoryCounts: Record<string, number> = {};
+          products.forEach((p: any) => {
+            if (p.category) {
+              categoryCounts[p.category] =
+                (categoryCounts[p.category] || 0) + 1;
+            }
+          });
+          return Object.entries(categoryCounts)
+            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .slice(0, 10)
+            .map(([category, count]) => ({ category, count: count as number }));
+        })(),
       };
 
-      if (dateRange) {
-        params.since = dateRange.since;
-        params.until = dateRange.until;
-      }
+       const report = {
+        catalog_info: {
+          id: catalogInfo.id,
+          name: catalogInfo.name,
+          vertical: catalogInfo.vertical,
+          total_products: catalogInfo.product_count || products.length,
+        },
 
-      const response = await axios.get(
-        `${this.baseUrl}/${this.version}/${catalogId}/insights`,
-        { params },
-      );
+        product_statistics: productAnalysis,
 
-      return response.data;
+        product_sets_summary: {
+          total_sets: productSets.data?.length || 0,
+          sets: productSets.data || [],
+        },
+
+        product_feeds_summary: {
+          total_feeds: productFeeds.data?.length || 0,
+          feeds: productFeeds.data || [],
+        },
+
+        detailed_products: {
+          count: products.length,
+          sample: products.slice(0, 20),  
+          has_more: products.length > 20,
+        },
+
+        summary: {
+          catalog_health: {
+            products_with_images: products.filter((p: any) => p.image_url)
+              .length,
+            products_with_descriptions: products.filter(
+              (p: any) => p.description,
+            ).length,
+            products_with_brands: products.filter((p: any) => p.brand).length,
+            products_with_categories: products.filter((p: any) => p.category)
+              .length,
+            products_in_stock: products.filter(
+              (p: any) => p.availability === 'in stock',
+            ).length,
+          },
+          completion_rate: Math.round(
+            (products.filter(
+              (p: any) =>
+                p.name &&
+                p.description &&
+                p.brand &&
+                p.category &&
+                p.price &&
+                p.image_url,
+            ).length /
+              Math.max(products.length, 1)) *
+              100,
+          ),
+        },
+
+        metadata: {
+          generated_at: new Date().toISOString(),
+          api_version: this.version,
+          date_range: dateRange || null,
+          errors: results.reduce<ApiError[]>((errors, result, index) => {
+            if (result.status === 'rejected') {
+              errors.push({
+                endpoint: [
+                  'catalog',
+                  'products',
+                  'product_sets',
+                  'product_feeds',
+                ][index],
+                error: result.reason?.message || 'Unknown error',
+              });
+            }
+            return errors;
+          }, []),
+        },
+      };
+
+      return report;
     } catch (error) {
       throw new BadRequestDomainException(
         `Failed to get catalog insights: ${error.response?.data?.error?.message || error.message}`,
