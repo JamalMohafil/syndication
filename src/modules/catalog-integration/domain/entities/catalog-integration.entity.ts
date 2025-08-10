@@ -105,7 +105,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
     }
     console.log(4);
 
-    return this._tokenExpiresAt < new Date();
+    return this._tokenExpiresAt > new Date();
   }
   setPlatformConfigs(configs: Record<string, any>): void {
     this._platformConfigs = { ...this._platformConfigs, ...configs };

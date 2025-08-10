@@ -162,6 +162,7 @@ export class GoogleMerchantService {
     accessToken: string,
     refreshToken: string,
     merchantId: string,
+    limit?: number,
   ): Promise<any[]> {
     this.googleOAuthService.setCredentials(accessToken, refreshToken);
     const content = google.content({
@@ -170,7 +171,10 @@ export class GoogleMerchantService {
     });
 
     try {
-      const response = await content.products.list({ merchantId });
+      const response = await content.products.list({
+        merchantId,
+        maxResults: limit ? limit : 25,
+      });
       return response.data.resources || [];
     } catch (error) {
       throw new Error(`Failed to fetch products: ${error.message}`);
@@ -238,7 +242,6 @@ export class GoogleMerchantService {
     maxRetries: number = 3,
   ): Promise<any> {
     this.googleOAuthService.setCredentials(accessToken, refreshToken);
-
     const content = google.content({
       version: 'v2.1',
       auth: this.googleOAuthService.getAuthClient(),
@@ -255,43 +258,31 @@ export class GoogleMerchantService {
       contentType: 'products',
       fileName: `${feedName}.xml`,
       attributeLanguage: 'en',
-
       targets: [
         {
           country: 'US',
           language: 'en',
         },
       ],
-
       fetchSchedule: {
-        weekday: 'MONDAY',
-        hour: 6,
+        hour: (new Date().getUTCHours() + 1) % 24,
         fetchUrl: feedUrl,
         timeZone: 'UTC',
       },
     };
 
+    let createdFeed: any = null;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(
-          `Attempting to create data feed - Attempt ${attempt}/${maxRetries}`,
-        );
-
         const response = await content.datafeeds.insert({
           merchantId,
           requestBody,
         });
 
-        console.log('Data feed created successfully:', response.data);
-        return response.data;
+        createdFeed = response.data;
+        break;
       } catch (error) {
-        console.error(`Attempt ${attempt} failed:`, {
-          message: error.message,
-          code: error.code,
-          status: error.response?.status,
-          data: error.response?.data,
-        });
-
         const isNetworkError =
           error.code === 'ECONNRESET' ||
           error.code === 'ETIMEDOUT' ||
@@ -307,16 +298,37 @@ export class GoogleMerchantService {
               `Failed to create data feed: ${JSON.stringify(error.response.data)}`,
             );
           }
-
           throw new BadRequestDomainException(
             `Failed to create data feed after ${maxRetries} attempts: ${error.message}`,
           );
         }
 
         const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        console.log(`Waiting ${waitTime}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
+
+    if (createdFeed?.id) {
+      this.triggerFeedSync(content, merchantId, createdFeed.id);
+    }
+
+    return createdFeed;
+  }
+
+  private async triggerFeedSync(
+    content: any,
+    merchantId: string,
+    feedId: string,
+  ): Promise<void> {
+    setTimeout(async () => {
+      try {
+        await content.datafeeds.fetch({
+          merchantId,
+          datafeedId: feedId,
+        });
+      } catch (error) {
+        // Sync will happen on schedule anyway
+      }
+    }, 2000);
   }
 }
