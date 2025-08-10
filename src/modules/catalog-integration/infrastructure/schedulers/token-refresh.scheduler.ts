@@ -9,7 +9,7 @@ export class TokenRefreshScheduler {
     @InjectQueue('refresh-tokens-job') private readonly queue: Queue,
   ) {}
 
-  @Cron(CronExpression.EVERY_2_HOURS)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async handleCron() {
     await this.queue.add('', {});
   }

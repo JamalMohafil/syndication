@@ -35,6 +35,7 @@ import { CheckDataFeedStatusUseCase } from './application/use-cases/google/check
 import { CreateMetaCatalogUseCase } from './application/use-cases/meta/create-meta-catalog.use-case';
 import { DeleteMetaCatalogUseCase } from './application/use-cases/meta/delete-meta-catalog.use-case';
 import { UpdateMetaCatalogUseCase } from './application/use-cases/meta/update-meta-catalog.use-case';
+import { CreateMetaProductUseCase } from './application/use-cases/meta/create-meta-product.use-case';
 
 const useCases = [
   GenerateAuthUrlUseCase,
@@ -57,6 +58,7 @@ const useCases = [
   DeleteMetaCatalogUseCase,
   UpdateMetaCatalogUseCase,
   CreateDataFeedUseCase,
+  CreateMetaProductUseCase,
 ];
 @Module({
   imports: [

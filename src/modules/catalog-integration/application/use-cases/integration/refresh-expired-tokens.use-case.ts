@@ -8,7 +8,7 @@ export class RefreshExpiredTokensUseCase {
   ) {}
   async execute() {
     await this.catalogIntegrationService.refreshExpiredTokens();
-
+    
     return { message: 'Token refresh completed', status: 200, success: true };
   }
 }

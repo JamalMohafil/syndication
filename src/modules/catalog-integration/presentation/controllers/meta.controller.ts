@@ -25,15 +25,14 @@ import { TenantAuthGuard } from '../../infrastructure/guards/tenant-auth.guard';
 import { GetBusinessAccountsUseCase } from '../../application/use-cases/meta/get-business-accounts.use-case';
 import { GetMetaIntegrationUseCase } from '../../application/use-cases/meta/get-meta-integration.use-case';
 import { GetMetaCatalogsUseCase } from '../../application/use-cases/meta/get-meta-catalogs.use-case';
-import {
-  MetaCatalogService,
-  CreateProductRequest,
-} from '../../infrastructure/external-services/meta/meta-catalog.service';
+import { MetaCatalogService } from '../../infrastructure/external-services/meta/meta-catalog.service';
 import { CreateMetaCatalogUseCase } from '../../application/use-cases/meta/create-meta-catalog.use-case';
 import { CreateMetaCatalogDto } from '../dto/create-meta-catalog.dto';
 import { DeleteMetaCatalogUseCase } from '../../application/use-cases/meta/delete-meta-catalog.use-case';
 import { UpdateMetaCatalogDto } from '../dto/update-meta-catalog.dto';
 import { UpdateMetaCatalogUseCase } from '../../application/use-cases/meta/update-meta-catalog.use-case';
+import { CreateProductDto } from '../dto/create-meta-product.dto';
+import { CreateMetaProductUseCase } from '../../application/use-cases/meta/create-meta-product.use-case';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -51,6 +50,7 @@ export class MetaIntegrationController {
     private readonly deleteMetaCatalogUseCase: DeleteMetaCatalogUseCase,
     private readonly updateMetaCatalogUseCase: UpdateMetaCatalogUseCase,
     private readonly metaCatalogService: MetaCatalogService,
+    private readonly createMetaProductUseCase: CreateMetaProductUseCase,
   ) {}
 
   @Get('business/accounts')
@@ -272,15 +272,16 @@ export class MetaIntegrationController {
   async createProduct(
     @Req() req: FastifyRequest,
     @Param('catalogId') catalogId: string,
-    @Body() productData: CreateProductRequest,
+    @Body() productData: CreateProductDto,
   ) {
-    const integration = await this.getMetaIntegration((req as any).tenantId);
-
-    return await this.metaCatalogService.createProduct(
+    const tenantId = (req as any).tenantId;
+    const res = await this.createMetaProductUseCase.execute(
+      tenantId,
       catalogId,
       productData,
-      integration.accessToken,
     );
+
+    return res;
   }
 
   @Put('products/:productId')
@@ -292,7 +293,7 @@ export class MetaIntegrationController {
   async updateProduct(
     @Req() req: FastifyRequest,
     @Param('productId') productId: string,
-    @Body() productData: Partial<CreateProductRequest>,
+    @Body() productData: Partial<CreateProductDto>,
   ) {
     const integration = await this.getMetaIntegration((req as any).tenantId);
 
@@ -330,7 +331,7 @@ export class MetaIntegrationController {
   async bulkUploadProducts(
     @Req() req: FastifyRequest,
     @Param('catalogId') catalogId: string,
-    @Body() body: { products: CreateProductRequest[] },
+    @Body() body: { products: CreateProductDto[] },
   ) {
     const integration = await this.getMetaIntegration((req as any).tenantId);
 

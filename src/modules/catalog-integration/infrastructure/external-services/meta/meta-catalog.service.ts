@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { META_ACCESS_TOKEN } from 'src/modules/catalog-integration/presentation/controllers/meta.controller';
 import { CreateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-catalog.dto';
+import { CreateProductDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-product.dto';
 import { UpdateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/update-meta-catalog.dto';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 
@@ -33,27 +34,6 @@ export interface MetaProduct {
   retailer_id: string;
   category: string;
   visibility: string;
-}
-
-export interface CreateProductRequest {
-  retailer_id: string;
-  name: string;
-  description: string;
-  availability:
-    | 'in stock'
-    | 'out of stock'
-    | 'preorder'
-    | 'available for order'
-    | 'discontinued';
-  condition: 'new' | 'refurbished' | 'used';
-  price: string;
-  currency: string;
-  url: string;
-  image_url: string;
-  brand?: string;
-  category?: string;
-  additional_image_urls?: string[];
-  custom_data?: Record<string, any>;
 }
 
 @Injectable()
@@ -381,7 +361,7 @@ export class MetaCatalogService {
 
   async createProduct(
     catalogId: string,
-    productData: CreateProductRequest,
+    productData: CreateProductDto,
     accessToken: string,
   ): Promise<{ id: string }> {
     try {
@@ -417,9 +397,83 @@ export class MetaCatalogService {
     }
   }
 
+  async checkProductExists(
+    catalogId: string,
+    retailerId: string,
+    accessToken: string,
+  ): Promise<{ exists: boolean; product?: any; error?: string }> {
+    try {
+      let nextPage = `${this.baseUrl}/${this.version}/${catalogId}/products`;
+
+      do {
+        const response = await axios.get(nextPage, {
+          params:
+            nextPage === `${this.baseUrl}/${this.version}/${catalogId}/products`
+              ? {
+                  access_token: accessToken,
+                  fields: 'id,retailer_id,name,price,availability',
+                  limit: 100,
+                }
+              : { access_token: accessToken },
+        });
+
+        const products = response.data?.data || [];
+
+        // البحث عن المنتج في هذه الصفحة
+        const foundProduct = products.find(
+          (product) => product.retailer_id === retailerId,
+        );
+
+        if (foundProduct) {
+          return {
+            exists: true,
+            product: foundProduct,
+          };
+        }
+
+        // الانتقال للصفحة التالية إذا كانت موجودة
+        nextPage = response.data?.paging?.next || null;
+      } while (nextPage);
+
+      return {
+        exists: false,
+        error: 'المنتج غير موجود في الكتالوج',
+      };
+    } catch (error) {
+      let errorMessage = 'خطأ غير محدد';
+
+      if (error.response) {
+        const status = error.response.status;
+        const fbError = error.response.data?.error;
+
+        switch (status) {
+          case 400:
+            errorMessage = 'معاملات خاطئة في الطلب';
+            break;
+          case 401:
+            errorMessage = 'مشكلة في الصلاحيات أو Access Token';
+            break;
+          case 403:
+            errorMessage = 'ليس لديك صلاحية للوصول لهذا الكتالوج';
+            break;
+          case 404:
+            errorMessage = 'الكتالوج غير موجود';
+            break;
+          default:
+            errorMessage = fbError?.message || `خطأ HTTP: ${status}`;
+        }
+      }
+
+      return {
+        exists: false,
+        error: errorMessage,
+      };
+    }
+  }
+
   async updateProduct(
     productId: string,
-    productData: Partial<CreateProductRequest>,
+    productData: Partial<CreateProductDto>,
     accessToken: string,
   ): Promise<{ success: boolean }> {
     try {
@@ -489,7 +543,7 @@ export class MetaCatalogService {
 
   async bulkUploadProducts(
     catalogId: string,
-    products: CreateProductRequest[],
+    products: CreateProductDto[],
     accessToken: string,
   ): Promise<{ handle: string }> {
     try {
@@ -505,7 +559,7 @@ export class MetaCatalogService {
               description: product.description,
               availability: product.availability,
               condition: product.condition,
-              price: product.price,
+              price: Number(product.price).toFixed(2),
               currency: product.currency,
               url: product.url,
               image_url: product.image_url,
