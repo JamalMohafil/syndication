@@ -33,6 +33,5 @@ export const CatalogIntegrationSchema = new Schema<CatalogIntegrationDocument>(
   },
 );
 
-// Indexes
 CatalogIntegrationSchema.index({ tenantId: 1, platform: 1 }, { unique: true });
 CatalogIntegrationSchema.index({ tenantId: 1, status: 1 });

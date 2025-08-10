@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CatalogIntegrationRepository } from '../../domain/repositories/catalog-integration.repository';
 import { CatalogIntegrationEntity } from '../../domain/entities/catalog-integration.entity';
 import { PlatformType } from '../../domain/enums/platform-type.enum';
@@ -10,6 +10,7 @@ import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-requ
 
 @Injectable()
 export class CatalogIntegrationService {
+  private readonly logger = new Logger(CatalogIntegrationService.name);
   constructor(
     private readonly catalogIntegrationRepository: CatalogIntegrationRepository,
     private readonly googleOAuthService: GoogleOAuthService,
@@ -221,39 +222,118 @@ export class CatalogIntegrationService {
   }
 
   async refreshExpiredTokens(): Promise<void> {
-    console.log('Refreshing expired tokens...');
-    const expiredIntegrations =
-      await this.catalogIntegrationRepository.findExpiredTokens();
-    console.log(expiredIntegrations);
-    for (const integration of expiredIntegrations) {
-      try {
-        if (
-          integration.platform === PlatformType.GOOGLE &&
-          integration.refreshToken
-        ) {
+    this.logger.log('Starting token refresh process...');
+
+    try {
+      const expiredIntegrations =
+        await this.catalogIntegrationRepository.findExpiredTokens();
+
+      if (!expiredIntegrations || expiredIntegrations.length === 0) {
+        this.logger.log('No expired tokens found');
+        return;
+      }
+
+      this.logger.log(
+        `Found ${expiredIntegrations.length} expired integrations`,
+      );
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      // معالجة التوكنز بشكل متتالي لتجنب rate limiting
+      for (const integration of expiredIntegrations) {
+        try {
+          if (integration.platform !== PlatformType.GOOGLE) {
+            this.logger.warn(
+              `Skipping non-Google integration: ${integration.id}`,
+            );
+            continue;
+          }
+
+          if (!integration.refreshToken) {
+            this.logger.error(
+              `No refresh token found for integration: ${integration.id}`,
+            );
+            integration.updateStatus(IntegrationStatus.ERROR);
+            await this.catalogIntegrationRepository.update(
+              integration.id,
+              integration,
+            );
+            results.failed++;
+            results.errors.push(
+              `Integration ${integration.id}: No refresh token`,
+            );
+            continue;
+          }
+
+          this.logger.log(
+            `Refreshing tokens for integration: ${integration.id}`,
+          );
+
           const newTokens = await this.googleOAuthService.refreshAccessToken(
             integration.refreshToken,
           );
+
           integration.updateTokens(
             newTokens.access_token,
             newTokens.refresh_token,
             new Date(Date.now() + newTokens.expires_in * 1000),
           );
+
           integration.updateStatus(IntegrationStatus.CONNECTED);
 
           await this.catalogIntegrationRepository.update(
             integration.id,
             integration,
           );
+
+          results.success++;
+          this.logger.log(
+            `Successfully refreshed tokens for integration: ${integration.id}`,
+          );
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        } catch (error) {
+          this.logger.error(
+            `Failed to refresh tokens for integration ${integration.id}:`,
+            error,
+          );
+
+          const isRefreshTokenExpired =
+            error.message?.includes('invalid_grant') ||
+            error.message?.includes('Refresh token is invalid or expired');
+
+          integration.updateStatus(
+            isRefreshTokenExpired
+              ? IntegrationStatus.ERROR
+              : IntegrationStatus.ERROR,
+          );
+
+          await this.catalogIntegrationRepository.update(
+            integration.id,
+            integration,
+          );
+
+          results.failed++;
+          results.errors.push(
+            `Integration ${integration.id}: ${error.message}`,
+          );
         }
-      } catch (error) {
-        integration.updateStatus(IntegrationStatus.ERROR);
-        await this.catalogIntegrationRepository.update(
-          integration.id,
-          integration,
-        );
       }
+
+      this.logger.log(
+        `Token refresh completed. Success: ${results.success}, Failed: ${results.failed}`,
+      );
+
+      if (results.errors.length > 0) {
+        this.logger.warn('Refresh errors:', results.errors);
+      }
+    } catch (error) {
+      this.logger.error('Critical error during token refresh process:', error);
+      throw error;
     }
-    console.log('Expired tokens refreshed.');
   }
 }
