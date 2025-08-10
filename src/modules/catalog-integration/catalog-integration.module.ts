@@ -33,6 +33,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { MetaCatalogService } from './infrastructure/external-services/meta/meta-catalog.service';
 import { CheckDataFeedStatusUseCase } from './application/use-cases/google/check-data-feed-status.use-case';
 import { CreateMetaCatalogUseCase } from './application/use-cases/meta/create-meta-catalog.use-case';
+import { DeleteMetaCatalogUseCase } from './application/use-cases/meta/delete-meta-catalog.use-case';
 
 const useCases = [
   GenerateAuthUrlUseCase,
@@ -52,6 +53,7 @@ const useCases = [
   GetTenantIntegrationsUseCase,
   CheckDataFeedStatusUseCase,
   CreateMetaCatalogUseCase,
+  DeleteMetaCatalogUseCase,
   CreateDataFeedUseCase,
 ];
 @Module({

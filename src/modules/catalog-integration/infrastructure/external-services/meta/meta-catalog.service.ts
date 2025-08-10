@@ -95,6 +95,64 @@ export class MetaCatalogService {
       );
     }
   }
+  async deleteCatalog(
+    accessToken: string,
+    catalogId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    console.log(`${this.baseUrl}/${this.version}/${catalogId}`);
+    try {
+      const response = await axios.delete(
+        `${this.baseUrl}/${this.version}/${catalogId}`,
+        {
+          params: {
+            access_token: accessToken,
+          },
+        },
+      );
+
+      console.log('Delete response:', response.data);
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: `Catalog ${catalogId} deleted successfully`,
+        };
+      } else {
+        throw new BadRequestDomainException(
+          `Failed to delete catalog ${catalogId}`,
+        );
+      }
+    } catch (error) {
+      console.error('Error deleting catalog:', error);
+
+      if (error.response?.status === 404) {
+        throw new BadRequestDomainException(
+          `Catalog ID "${catalogId}" not found`,
+        );
+      }
+
+      if (error.response?.status === 403) {
+        throw new BadRequestDomainException(
+          `No permission to delete catalog "${catalogId}"`,
+        );
+      }
+
+      if (error.response?.status === 400) {
+        throw new BadRequestDomainException(
+          `Invalid catalog ID "${catalogId}"`,
+        );
+      }
+
+      if (error instanceof BadRequestDomainException) {
+        throw error;
+      }
+
+      throw new BadRequestDomainException(
+        `Failed to delete catalog: ${error.response?.data?.error?.message || error.message}`,
+      );
+    }
+  }
+
   async getCatalogs(
     accessToken: string,
     businessId?: string,

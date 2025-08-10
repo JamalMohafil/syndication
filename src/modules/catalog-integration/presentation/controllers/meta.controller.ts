@@ -29,8 +29,9 @@ import {
   MetaCatalogService,
   CreateProductRequest,
 } from '../../infrastructure/external-services/meta/meta-catalog.service';
- import { CreateMetaCatalogUseCase } from '../../application/use-cases/meta/create-meta-catalog.use-case';
+import { CreateMetaCatalogUseCase } from '../../application/use-cases/meta/create-meta-catalog.use-case';
 import { CreateMetaCatalogDto } from '../dto/create-meta-catalog.dto';
+import { DeleteMetaCatalogUseCase } from '../../application/use-cases/meta/delete-meta-catalog.use-case';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -45,6 +46,7 @@ export class MetaIntegrationController {
     private readonly getMetaIntegrationUseCase: GetMetaIntegrationUseCase,
     private readonly getMetaCatalogsUseCase: GetMetaCatalogsUseCase,
     private readonly createMetaCatalogUseCase: CreateMetaCatalogUseCase,
+    private readonly deleteMetaCatalogUseCase: DeleteMetaCatalogUseCase,
     private readonly metaCatalogService: MetaCatalogService,
   ) {}
 
@@ -174,23 +176,24 @@ export class MetaIntegrationController {
   //   );
   // }
 
-  // @Delete('catalogs/:catalogId')
-  // @ApiOperation({
-  //   summary: 'Delete catalog',
-  //   description: 'Delete a catalog completely.',
-  // })
-  // @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
-  // async deleteCatalog(
-  //   @Req() req: FastifyRequest,
-  //   @Param('catalogId') catalogId: string,
-  // ) {
-  //   const integration = await this.getMetaIntegration((req as any).tenantId);
+  @Delete('catalogs/:catalogId')
+  @ApiOperation({
+    summary: 'Delete catalog',
+    description: 'Delete a catalog completely.',
+  })
+  @ApiParam({ name: 'catalogId', description: 'Catalog ID' })
+  async deleteCatalog(
+    @Req() req: FastifyRequest,
+    @Param('catalogId') catalogId: string,
+  ) {
+    const tenantId = (req as any).tenantId;
+    const res = await this.deleteMetaCatalogUseCase.execute(
+      catalogId,
+      tenantId,
+    );
 
-  //   return await this.metaCatalogService.deleteCatalog(
-  //     catalogId,
-  //     integration.accessToken,
-  //   );
-  // }
+    return res;
+  }
 
   @Get('catalogs')
   @ApiOperation({
