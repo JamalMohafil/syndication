@@ -58,7 +58,7 @@ export interface CreateProductRequest {
 @Injectable()
 export class MetaCatalogService {
   private readonly baseUrl = 'https://graph.facebook.com';
-  private readonly version = 'v20.0';
+  private readonly version = 'v23.0';
 
   constructor(private configService: ConfigService) {}
 
@@ -72,7 +72,7 @@ export class MetaCatalogService {
 
       const requestData = {
         name: catalogData.name,
-        vertical: catalogData.vertical || 'commerce',
+        vertical: catalogData.vertical || 'offline_commerce',
         ...(catalogData.feed_count_limit && {
           feed_count_limit: catalogData.feed_count_limit,
         }),
@@ -95,11 +95,11 @@ export class MetaCatalogService {
       );
     }
   }
-
   async getCatalogs(
     accessToken: string,
     businessId?: string,
   ): Promise<MetaCatalog[]> {
+    console.log('Url asd', `${this.baseUrl}/${this.version}/${businessId}?`);
     try {
       if (!businessId) {
         const businessResponse = await axios.get(
@@ -127,31 +127,43 @@ export class MetaCatalogService {
 
         return allCatalogs;
       } else {
-        const businessResponse = await axios.get(
-          `${this.baseUrl}/${this.version}/me/businesses`,
+        const businessResponse: any = await axios.get(
+          `${this.baseUrl}/${this.version}/${businessId}`,
           {
             params: {
+              fields: 'owned_product_catalogs',
               access_token: accessToken,
-              fields: `id,name,owned_product_catalogs{id,name,product_count,business,feed_count,is_catalog_segment,vertical}`,
             },
           },
         );
 
-        const businesses = businessResponse.data.data || [];
-        const targetBusiness = businesses.find((b) => b.id === businessId);
+        console.log(businessResponse.data);
 
-        if (!targetBusiness) {
-          console.warn(`Business ${businessId} not found or no access`);
-          return [];
+        if (
+          !businessResponse.data.id ||
+          businessResponse.data.id !== businessId ||
+          !businessResponse.data.owned_product_catalogs ||
+          !businessResponse.data.owned_product_catalogs.data ||
+          businessResponse.data.owned_product_catalogs.data.length === 0
+        ) {
+          throw new BadRequestDomainException(
+            `Business ID "${businessId}" is invalid or not found`,
+          );
         }
 
-        return targetBusiness.owned_product_catalogs?.data || [];
+        return businessResponse.data.owned_product_catalogs.data;
       }
     } catch (error) {
-      console.error(
-        'Error getting catalogs:',
-        error.response?.data || error.message,
-      );
+      if (error.response?.status === 400 || error.response?.status === 404) {
+        throw new BadRequestDomainException(
+          `Business ID "${businessId}" is invalid or not found`,
+        );
+      }
+
+      if (error instanceof BadRequestDomainException) {
+        throw error;
+      }
+
       throw new BadRequestDomainException(
         `Failed to get Meta catalogs: ${error.response?.data?.error?.message || error.message}`,
       );

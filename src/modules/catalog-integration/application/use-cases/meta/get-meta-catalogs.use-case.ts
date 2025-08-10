@@ -36,10 +36,11 @@ export class GetMetaCatalogsUseCase {
     if (!integration.isActive()) {
       throw new BadRequestDomainException('Meta integration is not active');
     }
-
-    return await this.metaCatalogService.getCatalogs(
-      integration.accessToken,
-      businessId,
-    );
+const res = await this.metaCatalogService.getCatalogs(
+  integration.accessToken,
+  businessId,
+);
+console.log(res)
+    return res;
   }
 }
