@@ -37,8 +37,7 @@ export class TenantController {
       createTenantDto.defaultCurrency,
       createTenantDto.timezone,
     );
-    console.log(tenant);
-    return tenant.toJSON() as TenantResponse;
+     return tenant.toJSON() as TenantResponse;
   }
 
   @Get()

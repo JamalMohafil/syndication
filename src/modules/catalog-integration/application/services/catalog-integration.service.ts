@@ -31,6 +31,7 @@ export class CatalogIntegrationService {
         merchantAccounts =
           await this.googleMerchantService.getUserMerchantAccounts(
             tokenResponse.access_token,
+            tokenResponse.refresh_token!,
           );
       } catch (error) {
         console.warn('Could not fetch merchant accounts:', error.message);

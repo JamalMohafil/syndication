@@ -77,7 +77,6 @@ export class MongoCatalogIntegrationRepository extends CatalogIntegrationReposit
     id: string,
     updates: Partial<CatalogIntegrationEntity>,
   ): Promise<CatalogIntegrationEntity | null> {
-    console.log(updates);
     const updatedIntegration = await this.catalogIntegrationModel
       .findByIdAndUpdate(
         id,
@@ -85,13 +84,11 @@ export class MongoCatalogIntegrationRepository extends CatalogIntegrationReposit
           ...updates,
           updatedAt: new Date(),
           tokenExpiresAt: updates.tokenExpiresAt,
-          
         },
         { new: true },
       )
       .exec();
 
-    console.log(updatedIntegration, 'woww');
     return updatedIntegration ? this.toDomainEntity(updatedIntegration) : null;
   }
 
@@ -105,7 +102,6 @@ export class MongoCatalogIntegrationRepository extends CatalogIntegrationReposit
   private toDomainEntity(
     document: CatalogIntegrationDocument,
   ): CatalogIntegrationEntity {
-    console.log(document, 'document');
     return new CatalogIntegrationEntity(
       {
         tenantId: document.tenantId,

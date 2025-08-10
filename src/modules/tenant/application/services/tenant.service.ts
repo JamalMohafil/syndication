@@ -31,8 +31,7 @@ export class TenantService {
       isActive: true,
     });
     const createdTenant = await this.tenantRepository.create(tenant);
-    console.log(createdTenant);
-    return createdTenant;
+     return createdTenant;
   }
 
   async getTenantById(id: string): Promise<TenantEntity> {

@@ -16,8 +16,7 @@ export class MongoTenantRepository extends TenantRepository {
 
   async findById(id: string): Promise<TenantEntity | null> {
     const tenant = await this.tenantModel.findById(id).exec();
-    console.log(tenant, 'document');
-
+ 
     return tenant ? this.toDomainEntity(tenant) : null;
   }
 
@@ -47,9 +46,7 @@ export class MongoTenantRepository extends TenantRepository {
     });
 
     const savedTenant = await createdTenant.save();
-    console.log(savedTenant, 'savedTenant');
-    console.log(this.toDomainEntity(savedTenant), 'savedTenant');
-    return this.toDomainEntity(savedTenant);
+     return this.toDomainEntity(savedTenant);
   }
 
   async update(
@@ -73,8 +70,7 @@ export class MongoTenantRepository extends TenantRepository {
   }
 
   private toDomainEntity(document: TenantDocument): TenantEntity {
-    console.log(document, 'document');
-    return new TenantEntity(
+     return new TenantEntity(
       {
         name: document.name,
         email: document.email,

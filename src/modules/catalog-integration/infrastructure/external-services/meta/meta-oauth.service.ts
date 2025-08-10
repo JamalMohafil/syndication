@@ -226,8 +226,7 @@ export class MetaOAuthService {
           },
         },
       );
-      console.log(response.data);
-      return response.data.data || [];
+       return response.data.data || [];
     } catch (error) {
       throw new BadRequestDomainException(
         `Failed to get Facebook businesses: ${error.response?.data?.error?.message || error.message}`,

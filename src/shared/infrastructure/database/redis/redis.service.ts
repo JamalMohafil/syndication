@@ -23,8 +23,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       username: this.redisConfiguration.username,
       password: this.redisConfiguration.password,
     };
-    console.log(redisConfig);
-    this.redisClient = new Redis.Redis(redisConfig);
+     this.redisClient = new Redis.Redis(redisConfig);
   }
   onModuleDestroy() {
     this.redisClient.quit();

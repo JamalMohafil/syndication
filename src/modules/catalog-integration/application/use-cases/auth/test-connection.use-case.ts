@@ -5,6 +5,7 @@ import { PlatformType } from '../../../domain/enums/platform-type.enum';
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
 import { GoogleMerchantService } from 'src/modules/catalog-integration/infrastructure/external-services/google/google-merchant.service';
 import { MetaOAuthService } from 'src/modules/catalog-integration/infrastructure/external-services/meta/meta-oauth.service';
+import { GoogleOAuthService } from 'src/modules/catalog-integration/infrastructure/external-services/google/google-oauth.service';
 
 export interface TestConnectionRequest {
   tenantId: string;
@@ -22,7 +23,7 @@ export interface TestConnectionResponse {
 export class TestConnectionUseCase {
   constructor(
     private readonly integrationRepository: CatalogIntegrationRepository,
-    private readonly googleMerchantAdapter: GoogleMerchantService,
+    private readonly googleMerchantService: GoogleMerchantService,
     private readonly metaOAuthAdapter: MetaOAuthService,
   ) {}
 
@@ -42,7 +43,7 @@ export class TestConnectionUseCase {
         `Integration not found for platform: ${platform}`,
       );
     }
-
+    console.log(integration)
     if (!integration.isActive()) {
       return {
         isConnected: false,
@@ -55,6 +56,8 @@ export class TestConnectionUseCase {
       const testResult = await this.testPlatformConnection(
         platform,
         integration.accessToken,
+        integration.externalId,
+        integration.refreshToken!,
       );
 
       return {
@@ -75,11 +78,14 @@ export class TestConnectionUseCase {
   private async testPlatformConnection(
     platform: PlatformType,
     accessToken: string,
+    externalId: string,
+    refreshToken: string,
   ) {
     switch (platform) {
       case PlatformType.GOOGLE:
-        return await this.googleMerchantAdapter.getUserMerchantAccounts(
+        return await this.googleMerchantService.getUserMerchantAccounts(
           accessToken,
+          refreshToken,
         );
       case PlatformType.META:
         return await this.metaOAuthAdapter.getBusinessAccounts(accessToken);

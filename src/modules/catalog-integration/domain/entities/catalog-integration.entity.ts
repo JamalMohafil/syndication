@@ -9,7 +9,7 @@ export interface CatalogIntegrationProps {
   accessToken: string;
   refreshToken?: string;
   tokenExpiresAt?: Date;
-  externalId?: string;
+  externalId: string;
   platformConfigs?: Record<string, any>;
   status: IntegrationStatus;
   createdAt?: Date;
@@ -22,7 +22,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
   private _accessToken: string;
   private _refreshToken?: string;
   private _tokenExpiresAt?: Date;
-  private _externalId?: string;
+  private _externalId: string;
   private _platformConfigs?: Record<string, any>;
   private _status: IntegrationStatus;
 
@@ -39,7 +39,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
     this._refreshToken = params.refreshToken;
     this._tokenExpiresAt = params.tokenExpiresAt;
     this._externalId = params.externalId;
-    this._platformConfigs = this._platformConfigs ?? {};
+    this._platformConfigs = params.platformConfigs ?? {};
     this._status = params.status;
   }
 
@@ -58,7 +58,7 @@ export class CatalogIntegrationEntity extends BaseEntity {
   get tokenExpiresAt(): Date | undefined {
     return this._tokenExpiresAt;
   }
-  get externalId(): string | undefined {
+  get externalId(): string {
     return this._externalId;
   }
   get platformConfigs(): Record<string, any> | undefined {
@@ -90,9 +90,22 @@ export class CatalogIntegrationEntity extends BaseEntity {
   }
 
   isActive(): boolean {
-    return (
-      this._status === IntegrationStatus.CONNECTED && !this.isTokenExpired()
-    );
+    console.log(1);
+    if (this._status !== IntegrationStatus.CONNECTED) {
+      return false;
+    }
+    console.log(2);
+    if (!this._accessToken) {
+      return false;
+    }
+    console.log(3);
+
+    if (!this._tokenExpiresAt) {
+      return true;
+    }
+    console.log(4);
+
+    return this._tokenExpiresAt < new Date();
   }
   setPlatformConfigs(configs: Record<string, any>): void {
     this._platformConfigs = { ...this._platformConfigs, ...configs };

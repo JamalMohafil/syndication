@@ -32,7 +32,7 @@ export class ConnectPlatformUseCase {
     const { tenantId, platform, authCode } = request;
 
     const tokenResponse: GoogleTokenResponse | any =
-      await this.getTokensFromCode(platform, 'GOOGLE');
+      await this.getTokensFromCode(platform, authCode);
 
     const token = {
       accessToken: tokenResponse.access_token,
@@ -68,7 +68,7 @@ export class ConnectPlatformUseCase {
       tenantId,
       platform,
       accessToken: token.accessToken,
-
+      externalId: tokenResponse.user_id,
       status: IntegrationStatus.CONNECTED,
     });
 

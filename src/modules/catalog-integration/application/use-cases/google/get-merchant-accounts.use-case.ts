@@ -47,7 +47,7 @@ export class GetMerchantAccountsUseCase {
     const res = await this.googleMerchantService.getMerchantCenterAccounts(
       integration.accessToken,
       integration.externalId,
-      integration.refreshToken,
+      integration.refreshToken!,
     );
 
     return res;

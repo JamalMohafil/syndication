@@ -98,7 +98,7 @@ export class OAuthController {
   @UseGuards(TenantAuthGuard)
   async getGoogleMerchantAccounts(@Req() req: FastifyRequest) {
     const tenantId = (req as any).tenantId;
-    
+
     const response = await this.getGoogleMerchantAccountsUseCase.execute({
       tenantId,
     });
@@ -135,8 +135,7 @@ export class OAuthController {
       tenantId,
       error,
     });
-    console.log(result, 'result');
-    if (!result.success) {
+     if (!result.success) {
       return reply.redirect(
         `${frontendUrl}/integrations/error?message=${encodeURIComponent(
           result.errorMessage || 'Unknown error',

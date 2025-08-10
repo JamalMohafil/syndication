@@ -83,8 +83,7 @@ export class ProductFeedMongoRepository extends ProductFeedRepository {
   }
 
   private toDomainEntity(document: ProductFeedDocument): ProductFeedEntity {
-    console.log(document, 'document');
-    return new ProductFeedEntity({
+     return new ProductFeedEntity({
       id: document.id.toString(),
       tenantId: document.tenantId,
       fileUrl: document.fileUrl,

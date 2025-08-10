@@ -11,7 +11,6 @@ export class SeedDataService implements OnModuleInit {
 
   private async seedTenants() {
     try {
-      // Check if demo tenants already exist
       const existingTenants = await this.tenantService.getAllTenants();
       if (existingTenants.length > 0) {
         console.log('🌱 Demo tenants already exist, skipping seeding');
@@ -20,7 +19,6 @@ export class SeedDataService implements OnModuleInit {
 
       console.log('🌱 Seeding demo tenants...');
 
-      // Create demo tenants
       const demoTenants = [
         {
           name: 'Acme Electronics Store',

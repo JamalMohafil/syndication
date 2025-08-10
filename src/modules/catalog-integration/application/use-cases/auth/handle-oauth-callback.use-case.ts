@@ -26,8 +26,7 @@ export class HandleOAuthCallbackUseCase {
     request: HandleOAuthCallbackRequest,
   ): Promise<HandleOAuthCallbackResponse> {
     const { platform, code, tenantId, error } = request;
-    console.log(platform, code, tenantId, error);
-
+ 
     if (error) {
       return {
         success: false,
@@ -65,8 +64,7 @@ export class HandleOAuthCallbackUseCase {
             `Unsupported platform: ${platform}`,
           );
       }
-      console.log(integration);
-      return {
+       return {
         success: true,
         integrationId: integration.id,
       };

@@ -1,65 +1,81 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { google } from 'googleapis';
 import { GoogleOAuthService } from './google-oauth.service';
-import { MerchantCenterAccount } from './types/merchant-center-account.type';
 import { GoogleUserInfo } from './types/google-user-info.type';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
+import { MerchantAccount } from './types/merchant-account.type';
 
 @Injectable()
 export class GoogleMerchantService {
+  private readonly logger = new Logger(GoogleMerchantService.name);
   constructor(private readonly googleOAuthService: GoogleOAuthService) {}
 
   async getUserMerchantAccounts(
     accessToken: string,
-  ): Promise<MerchantCenterAccount[]> {
-    this.googleOAuthService.setCredentials(accessToken);
-
+    refreshToken?: string,
+  ): Promise<MerchantAccount[]> {
     try {
+      this.googleOAuthService.setCredentials(accessToken, refreshToken);
+
+      // استخدام Merchant API v1beta - الطريقة الجديدة
       const merchantApi = google.merchantapi({
         version: 'accounts_v1beta',
         auth: this.googleOAuthService.getAuthClient(),
       });
-      try {
-        const response = await merchantApi.accounts.list();
-        if (response.data.accounts && response.data.accounts.length > 0) {
-          return response.data.accounts.map((account: any) => ({
-            id: account.name?.split('/')[1] ?? '',
-            name: account.accountName ?? '',
-            websiteUrl: account.homepageUri ?? '',
-            adultContent: account.adultContent || false,
-          }));
-        }
-      } catch (merchantApiError) {
-        console.log(
-          'Merchant API not available, user needs to manually provide merchant ID',
+
+      this.logger.log(
+        'Attempting to fetch merchant accounts using Merchant API v1beta',
+      );
+
+    const response = await merchantApi.accounts.list();
+
+      if (response.data.accounts && response.data.accounts.length > 0) {
+        return response.data.accounts.map((account: any) => ({
+          id: account.accountId ?? account.name?.split('/')[1] ?? '',
+          name: account.accountName ?? account.displayName ?? '',
+          websiteUrl:
+            account.businessInfo?.website ?? account.homepageUri ?? '',
+          adultContent: account.adultContent || false,
+          kind: 'merchant#account',
+        }));
+      }
+
+      this.logger.warn('No merchant accounts found');
+      return [];
+    } catch (error) {
+      this.logger.error(
+        'Failed to fetch merchant accounts with v1beta API:',
+        error,
+      );
+
+      if (error.code === 401) {
+        throw new BadRequestDomainException(
+          'Authentication failed. Please re-authenticate your Google account.',
         );
       }
 
-      console.log(
-        'Cannot retrieve merchant accounts without merchant ID - user must provide manually',
-      );
-      return [];
-    } catch (error) {
-      console.error('Failed to fetch user merchant accounts:', error);
-      if (
-        error.code === 403 ||
-        error.code === 400 ||
-        error.message?.includes('Missing required parameters')
-      ) {
-        console.log(
-          'User does not have merchant center access or no accounts available',
+      if (error.code === 403) {
+        throw new BadRequestDomainException(
+          'Access denied. You may not have Merchant Center access or required permissions.',
         );
+      }
+
+      if (error.code === 404) {
+        this.logger.warn('Merchant API v1beta not available for this account');
         return [];
       }
-      return [];
+
+      throw new BadRequestDomainException(
+        `Failed to fetch merchant accounts: ${error.message}`,
+      );
     }
   }
 
   async getMerchantCenterAccounts(
     accessToken: string,
     merchantId: string,
-    refreshToken?: string,
-  ): Promise<MerchantCenterAccount[]> {
+    refreshToken: string,
+  ): Promise<MerchantAccount[]> {
     if (!merchantId) {
       console.warn('No merchantId provided - cannot fetch merchant accounts');
       return [];
@@ -75,7 +91,6 @@ export class GoogleMerchantService {
       const response = await content.accounts.list({
         merchantId: merchantId,
       });
-      console.log(response, 'response');
       return (
         response.data.resources?.map((account) => ({
           id: account.id ?? '',
@@ -113,7 +128,7 @@ export class GoogleMerchantService {
   async validateMerchantAccount(
     accessToken: string,
     merchantId: string,
-  ): Promise<MerchantCenterAccount | null> {
+  ): Promise<MerchantAccount | null> {
     this.googleOAuthService.setCredentials(accessToken);
     const content = google.content({
       version: 'v2.1',
@@ -141,24 +156,6 @@ export class GoogleMerchantService {
     } catch (error) {
       console.error('Failed to validate merchant account:', error);
       return null;
-    }
-  }
-
-  async getUserInfo(accessToken: string): Promise<GoogleUserInfo> {
-    this.googleOAuthService.setCredentials(accessToken);
-    const authClient = this.googleOAuthService.getAuthClient();
-
-    try {
-      const oauth2 = google.oauth2({ version: 'v2', auth: authClient });
-      const response = await oauth2.userinfo.get();
-      return {
-        id: response.data.id ?? '',
-        email: response.data.email ?? '',
-        name: response.data.name ?? '',
-        picture: response.data.picture ?? '',
-      };
-    } catch (error) {
-      throw new Error(`Failed to get user info: ${error.message}`);
     }
   }
 
