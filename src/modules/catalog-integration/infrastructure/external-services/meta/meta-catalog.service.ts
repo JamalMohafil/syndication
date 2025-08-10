@@ -895,17 +895,30 @@ export class MetaCatalogService {
             access_token: accessToken,
             fields:
               'id,name,description,url,image_url,availability,condition,price,currency,brand,retailer_id,category,visibility',
-            filter: JSON.stringify({
-              operator: 'CONTAIN',
-              value: query,
-              field: 'name',
-            }),
+            limit: 100,
           },
         },
       );
 
-      return response.data.data || [];
+      const products = response.data.data || [];
+
+      const filteredProducts = products.filter((product: any) => {
+        const searchTerm = query.toLowerCase();
+        return (
+          product.name?.toLowerCase().includes(searchTerm) ||
+          product.description?.toLowerCase().includes(searchTerm) ||
+          product.brand?.toLowerCase().includes(searchTerm) ||
+          product.retailer_id?.toLowerCase().includes(searchTerm)
+        );
+      });
+
+      console.log(
+        `Search results: Found ${filteredProducts.length} products for query: "${query}"`,
+      );
+
+      return filteredProducts;
     } catch (error) {
+      console.error('Search products error:', error.response?.data);
       throw new BadRequestDomainException(
         `Failed to search products: ${error.response?.data?.error?.message || error.message}`,
       );
