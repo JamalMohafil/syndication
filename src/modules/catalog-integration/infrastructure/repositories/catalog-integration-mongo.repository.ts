@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CatalogIntegrationRepository } from '../../domain/repositories/catalog-integration.repository';
 import { CatalogIntegrationEntity } from '../../domain/entities/catalog-integration.entity';
-import { CatalogIntegrationDocument, CatalogIntegrationName } from '../schemas/catalog-integration.schema';
+import {
+  CatalogIntegrationDocument,
+  CatalogIntegrationName,
+} from '../schemas/catalog-integration.schema';
 import { PlatformType } from '../../domain/enums/platform-type.enum';
 
 @Injectable()
@@ -95,16 +98,21 @@ export class MongoCatalogIntegrationRepository extends CatalogIntegrationReposit
   private toDomainEntity(
     document: CatalogIntegrationDocument,
   ): CatalogIntegrationEntity {
-    return new CatalogIntegrationEntity({
-      id: document.id.toString(),
-      tenantId: document.tenantId,
-      platform: document.platform,
-      accessToken: document.accessToken,
-      refreshToken: document.refreshToken,
-      tokenExpiresAt: document.tokenExpiresAt,
-      externalId: document.externalId,
-      platformConfigs: document.platformConfigs,
-      status: document.status,
-    });
+    console.log(document, 'document');
+    return new CatalogIntegrationEntity(
+      {
+        tenantId: document.tenantId,
+        platform: document.platform,
+        accessToken: document.accessToken,
+        refreshToken: document.refreshToken,
+        tokenExpiresAt: document.tokenExpiresAt,
+        externalId: document.externalId,
+        platformConfigs: document.platformConfigs,
+        status: document.status,
+      },
+      String(document._id),
+      document.createdAt,
+      document.updatedAt,
+    );
   }
 }

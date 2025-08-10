@@ -16,7 +16,7 @@ export class TokenRefreshProcessor extends WorkerHost {
   async process(job: Job): Promise<any> {
     try {
       console.log('Starting token refresh job...');
-      return await this.refreshTokensUseCase.execute();
+      await this.refreshTokensUseCase.execute();
       console.log('Token refresh job completed.');
     } catch (e) {
       this.logger.error(`Error processing ${job.id}`, e);

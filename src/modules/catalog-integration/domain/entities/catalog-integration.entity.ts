@@ -12,6 +12,8 @@ export interface CatalogIntegrationProps {
   externalId?: string;
   platformConfigs?: Record<string, any>;
   status: IntegrationStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export class CatalogIntegrationEntity extends BaseEntity {
@@ -24,8 +26,13 @@ export class CatalogIntegrationEntity extends BaseEntity {
   private _platformConfigs?: Record<string, any>;
   private _status: IntegrationStatus;
 
-  constructor(params: CatalogIntegrationProps) {
-    super();
+  constructor(
+    params: CatalogIntegrationProps,
+    id?: string,
+    createdAt?: Date,
+    updatedAt?: Date,
+  ) {
+    super(id, createdAt, updatedAt);
     this._tenantId = params.tenantId;
     this._platform = params.platform;
     this._accessToken = params.accessToken;

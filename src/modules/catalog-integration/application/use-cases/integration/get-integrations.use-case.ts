@@ -27,6 +27,7 @@ export class GetIntergrationsUseCase {
         `Integrations not found`,
       );
     }
+    console.log(integration)
 
     return integration;
   }

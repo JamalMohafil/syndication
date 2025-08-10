@@ -221,9 +221,10 @@ export class CatalogIntegrationService {
   }
 
   async refreshExpiredTokens(): Promise<void> {
+    console.log('Refreshing expired tokens...');
     const expiredIntegrations =
       await this.catalogIntegrationRepository.findExpiredTokens();
-
+    console.log(expiredIntegrations);
     for (const integration of expiredIntegrations) {
       try {
         if (
@@ -253,5 +254,6 @@ export class CatalogIntegrationService {
         );
       }
     }
+    console.log('Expired tokens refreshed.');
   }
 }

@@ -16,6 +16,8 @@ export class MongoTenantRepository extends TenantRepository {
 
   async findById(id: string): Promise<TenantEntity | null> {
     const tenant = await this.tenantModel.findById(id).exec();
+    console.log(tenant, 'document');
+
     return tenant ? this.toDomainEntity(tenant) : null;
   }
 
