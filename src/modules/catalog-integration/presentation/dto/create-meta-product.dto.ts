@@ -12,20 +12,8 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CurrencyCode } from '../enums/currency-code.enum';
-
-export enum Availability {
-  IN_STOCK = 'in stock',
-  OUT_OF_STOCK = 'out of stock',
-  PREORDER = 'preorder',
-  AVAILABLE_FOR_ORDER = 'available for order',
-  DISCONTINUED = 'discontinued',
-}
-
-export enum Condition {
-  NEW = 'new',
-  REFURBISHED = 'refurbished',
-  USED = 'used',
-}
+import { Availability } from '../enums/meta-product-availability.enum';
+import { Condition } from '../enums/meta-product-condition.enum';
 
 export class CreateProductDto {
   @ApiProperty({ description: 'Retailer product ID' })

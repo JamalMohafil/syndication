@@ -6,16 +6,16 @@ import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-requ
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
 
 @Injectable()
-export class CreateMetaProductUseCase {
+export class UpdateMetaProductUseCase {
   constructor(
     private readonly metaCatalogService: MetaCatalogService,
     private readonly getMetaIntegrationUseCase: GetMetaIntegrationUseCase,
   ) {}
 
   async execute(
+    productId: string,
     tenantId: string,
-    catalogId: string,
-    productData: CreateProductDto,
+    productData: Partial<CreateProductDto>,
   ) {
     const integration = await this.getMetaIntegrationUseCase.execute({
       tenantId,
@@ -24,26 +24,19 @@ export class CreateMetaProductUseCase {
     if (!integration || !integration.isActive()) {
       throw new BadRequestDomainException('Meta integration is not active');
     }
-    const existingCatalogs = await this.metaCatalogService.checkCatalogExists(
-      catalogId,
-      integration.accessToken,
-    );
-    if (existingCatalogs.exists === false) {
-      throw new NotFoundDomainException(`Catalog not found`);
-    }
+
     const existing =
-      await this.metaCatalogService.checkProductExistsByRetailerId(
-        catalogId,
-        productData.retailer_id,
+      await this.metaCatalogService.checkProductExistsByProductId(
+        productId,
         integration.accessToken,
       );
 
-    if (existing.exists) {
-      throw new NotFoundDomainException(`Product already exists`);
+    if (!existing.exists) {
+      throw new NotFoundDomainException(`Product not found`);
     }
 
-    return await this.metaCatalogService.createProduct(
-      catalogId,
+    return await this.metaCatalogService.updateProduct(
+      productId,
       productData,
       integration.accessToken,
     );

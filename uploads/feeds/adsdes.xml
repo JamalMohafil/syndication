@@ -2,26 +2,26 @@
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
   <channel>
     <title>My Store</title>
-    <link>http://www.mystore.com</link>
+    <link>https://www.mystore.com</link>
     <description>Example Product Feed</description>
 
     <item>
       <g:id>12345</g:id>
       <g:title>Sample Product</g:title>
       <g:description>This is a high-quality sample product for Google Merchant feed.</g:description>
-      <g:link>http://www.mystore.com/sample-product</g:link>
-      <g:image_link>http://www.mystore.com/images/sample-product.jpg</g:image_link>
+      <g:link>https://www.mystore.com/sample-product</g:link>
+      <g:image_link>https://www.mystore.com/images/sample-product.jpg</g:image_link>
       <g:availability>in stock</g:availability>
       <g:price>29.99 USD</g:price>
       <g:brand>SampleBrand</g:brand>
       <g:condition>new</g:condition>
-      <g:gtin>00012345678905</g:gtin>
+      <g:gtin>0001234567890</g:gtin>
       <g:mpn>ABC123</g:mpn>
-      <g:google_product_category>Apparel & Accessories > Clothing > Shirts & Tops</g:google_product_category>
+      <g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Shirts &amp; Tops</g:google_product_category>
       <g:shipping>
         <g:country>US</g:country>
         <g:service>Standard shipping</g:service>
-        <g:price>5.00 USD</g:price>
+        <g:price>15.00 USD</g:price>
       </g:shipping>
       <g:identifier_exists>true</g:identifier_exists>
     </item>

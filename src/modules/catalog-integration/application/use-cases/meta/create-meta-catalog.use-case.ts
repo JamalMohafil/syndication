@@ -31,11 +31,6 @@ export class CreateMetaCatalogUseCase {
         businessId,
       );
 
-      console.log(
-        existingCatalogs,
-        `Existing catalogs for business ${businessId}`,
-      );
-
       if (!existingCatalogs || existingCatalogs.length === 0) {
         throw new BadRequestDomainException(
           `You must create your first catalog directly from Facebook Business Manager for business ${businessId}`,

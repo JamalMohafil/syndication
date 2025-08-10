@@ -25,11 +25,12 @@ export class DeleteMetaCatalogUseCase {
     }
 
     try {
-      const existingCatalogs = await this.metaCatalogService.getCatalogs(
+      const existingCatalogs = await this.metaCatalogService.checkCatalogExists(
+        catalogId,
         integration.accessToken,
       );
 
-      if (!existingCatalogs.map((catalog) => catalog.id).includes(catalogId)) {
+      if (!existingCatalogs.exists) {
         throw new BadRequestDomainException(`Catalog not found`);
       }
 

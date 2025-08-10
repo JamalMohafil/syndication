@@ -33,6 +33,8 @@ import { UpdateMetaCatalogDto } from '../dto/update-meta-catalog.dto';
 import { UpdateMetaCatalogUseCase } from '../../application/use-cases/meta/update-meta-catalog.use-case';
 import { CreateProductDto } from '../dto/create-meta-product.dto';
 import { CreateMetaProductUseCase } from '../../application/use-cases/meta/create-meta-product.use-case';
+import { UpdateMetaProductUseCase } from '../../application/use-cases/meta/update-meta-product.use-case';
+import { UpdateProductDto } from '../dto/update-meta-product.dto';
 
 export const META_ACCESS_TOKEN =
   'EAAZAckPNd8QUBPONSUCAs7WroOZCAFDrrXWy7HyHBpKE30HBmpDOKRv13XZC71aBIrJCyeqWaE8qq8KBk8ZCk9MhmVAgXYZBI50zd7ZAkWZBRX475aBfbRGwZA9StLG9uYK4aD1uQgfb2HJMXBEU18Hapij7q8nZAuQZBGVbkaVs9keH9PRPlsP0gGYcHdogNjKLwKmd4diGN4tDV5cRjtOGxdYA7niPJazOVSzmVo';
@@ -50,6 +52,7 @@ export class MetaIntegrationController {
     private readonly deleteMetaCatalogUseCase: DeleteMetaCatalogUseCase,
     private readonly updateMetaCatalogUseCase: UpdateMetaCatalogUseCase,
     private readonly metaCatalogService: MetaCatalogService,
+    private readonly updateMetaProductUseCase: UpdateMetaProductUseCase,
     private readonly createMetaProductUseCase: CreateMetaProductUseCase,
   ) {}
 
@@ -256,11 +259,12 @@ export class MetaIntegrationController {
     @Param('productId') productId: string,
   ) {
     const integration = await this.getMetaIntegration((req as any).tenantId);
-
-    return await this.metaCatalogService.getProduct(
+    const res = await this.metaCatalogService.getProduct(
       productId,
       integration.accessToken,
     );
+    console.log(res);
+    return res;
   }
 
   @Post('catalogs/:catalogId/products')
@@ -293,15 +297,16 @@ export class MetaIntegrationController {
   async updateProduct(
     @Req() req: FastifyRequest,
     @Param('productId') productId: string,
-    @Body() productData: Partial<CreateProductDto>,
+    @Body() productData: UpdateProductDto,
   ) {
-    const integration = await this.getMetaIntegration((req as any).tenantId);
-
-    return await this.metaCatalogService.updateProduct(
+    const tenantId = (req as any).tenantId;
+    const res = await this.updateMetaProductUseCase.execute(
       productId,
+      tenantId,
       productData,
-      integration.accessToken,
     );
+
+    return res;
   }
 
   @Delete('products/:productId')

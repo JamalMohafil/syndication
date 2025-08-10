@@ -35,15 +35,11 @@ export class UpdateMetaCatalogUseCase {
     }
 
     try {
-      const existingCatalogs = await this.metaCatalogService.getCatalogs(
+      const existingCatalogs = await this.metaCatalogService.checkCatalogExists(
+        catalogId,
         integration.accessToken,
       );
-
-      if (
-        !existingCatalogs ||
-        existingCatalogs.length < 1 ||
-        !existingCatalogs.map((catalog) => catalog.id).includes(catalogId)
-      ) {
+      if (existingCatalogs.exists === false) {
         throw new BadRequestDomainException(`Catalog not found`);
       }
 

@@ -36,6 +36,7 @@ import { CreateMetaCatalogUseCase } from './application/use-cases/meta/create-me
 import { DeleteMetaCatalogUseCase } from './application/use-cases/meta/delete-meta-catalog.use-case';
 import { UpdateMetaCatalogUseCase } from './application/use-cases/meta/update-meta-catalog.use-case';
 import { CreateMetaProductUseCase } from './application/use-cases/meta/create-meta-product.use-case';
+import { UpdateMetaProductUseCase } from './application/use-cases/meta/update-meta-product.use-case';
 
 const useCases = [
   GenerateAuthUrlUseCase,
@@ -59,6 +60,7 @@ const useCases = [
   UpdateMetaCatalogUseCase,
   CreateDataFeedUseCase,
   CreateMetaProductUseCase,
+  UpdateMetaProductUseCase,
 ];
 @Module({
   imports: [

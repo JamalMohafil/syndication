@@ -5,6 +5,7 @@ import { META_ACCESS_TOKEN } from 'src/modules/catalog-integration/presentation/
 import { CreateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-catalog.dto';
 import { CreateProductDto } from 'src/modules/catalog-integration/presentation/dto/create-meta-product.dto';
 import { UpdateMetaCatalogDto } from 'src/modules/catalog-integration/presentation/dto/update-meta-catalog.dto';
+import { UpdateProductDto } from 'src/modules/catalog-integration/presentation/dto/update-meta-product.dto';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 
 export interface MetaCatalog {
@@ -36,6 +37,20 @@ export interface MetaProduct {
   visibility: string;
 }
 
+interface CatalogCheckResult {
+  exists: boolean;
+  catalog?: {
+    id: string;
+    name: string;
+    business?: {
+      id: string;
+      name: string;
+    };
+    product_count?: number;
+  };
+  error?: string;
+  errorCode?: string;
+}
 @Injectable()
 export class MetaCatalogService {
   private readonly baseUrl = 'https://graph.facebook.com';
@@ -365,39 +380,225 @@ export class MetaCatalogService {
     accessToken: string,
   ): Promise<{ id: string }> {
     try {
+      const catalogCheck = await this.checkCatalogExists(
+        catalogId,
+        accessToken,
+      );
+
+      if (!catalogCheck.exists) {
+        throw new BadRequestDomainException(
+          `Cannot create product: ${catalogCheck.error}`,
+        );
+      }
+
+      const productPayload: any = {
+        retailer_id: productData.retailer_id,
+        name: productData.name,
+        description: productData.description,
+        availability: productData.availability || 'in stock',
+        condition: productData.condition || 'new',
+        price: productData.price,
+        currency: productData.currency || 'USD',
+        url: productData.url,
+        image_url: productData.image_url,
+      };
+
+      if (productData.brand) {
+        productPayload.brand = productData.brand;
+      }
+
+      if (productData.category) {
+        productPayload.category = productData.category;
+      }
+
+      if (
+        productData.additional_image_urls &&
+        productData.additional_image_urls.length > 0
+      ) {
+        productPayload.additional_image_urls =
+          productData.additional_image_urls;
+      }
+
+      if (productData.custom_data) {
+        productPayload.custom_data = productData.custom_data;
+      }
+
+      console.log(
+        'Creating product with payload:',
+        JSON.stringify(productPayload, null, 2),
+      );
+      console.log('Catalog ID:', catalogId);
+
       const response = await axios.post(
         `${this.baseUrl}/${this.version}/${catalogId}/products`,
-        {
-          retailer_id: productData.retailer_id,
-          name: productData.name,
-          description: productData.description,
-          availability: productData.availability,
-          condition: productData.condition,
-          price: productData.price,
-          currency: productData.currency,
-          url: productData.url,
-          image_url: productData.image_url,
-          brand: productData.brand,
-          category: productData.category,
-          additional_image_urls: productData.additional_image_urls,
-          custom_data: productData.custom_data,
-        },
+        productPayload,
         {
           params: {
             access_token: accessToken,
           },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
         },
       );
 
       return response.data;
     } catch (error) {
+      console.error('Error creating product:', {
+        catalogId,
+        retailerId: productData.retailer_id,
+        error: error.response?.data || error.message,
+      });
+
+      if (error.response) {
+        const status = error.response.status;
+        const fbError = error.response.data?.error;
+
+        switch (status) {
+          case 400:
+            if (fbError?.message?.includes('does not exist')) {
+              throw new BadRequestDomainException(
+                `Invalid catalog ID: ${catalogId}. Please verify the catalog exists and you have access.`,
+              );
+            } else if (fbError?.message?.includes('missing permissions')) {
+              throw new BadRequestDomainException(
+                `Insufficient permissions for catalog: ${catalogId}. Required: catalog_management permission.`,
+              );
+            } else if (fbError?.message?.includes('retailer_id')) {
+              throw new BadRequestDomainException(
+                `Product with retailer_id '${productData.retailer_id}' already exists in catalog.`,
+              );
+            }
+            break;
+
+          case 401:
+            throw new BadRequestDomainException(
+              'Invalid or expired access token. Please refresh your token.',
+            );
+
+          case 403:
+            throw new BadRequestDomainException(
+              `Access denied to catalog: ${catalogId}. Check your app permissions and catalog ownership.`,
+            );
+
+          case 429:
+            throw new BadRequestDomainException(
+              'Rate limit exceeded. Please wait before making more requests.',
+            );
+        }
+      }
+
       throw new BadRequestDomainException(
         `Failed to create product: ${error.response?.data?.error?.message || error.message}`,
       );
     }
   }
 
-  async checkProductExists(
+  async checkCatalogExists(
+    catalogId: string,
+    accessToken: string,
+  ): Promise<CatalogCheckResult> {
+    try {
+      const response = await axios.get(
+        `${this.baseUrl}/${this.version}/${catalogId}`,
+        {
+          params: {
+            access_token: accessToken,
+            fields: 'id,name,business,product_count',
+          },
+          timeout: 10000,
+        },
+      );
+
+      const catalog = response.data;
+
+      return {
+        exists: true,
+        catalog: {
+          id: catalog.id,
+          name: catalog.name,
+          business: catalog.business,
+          product_count: catalog.product_count,
+        },
+      };
+    } catch (error) {
+      console.error('Error checking catalog existence:', error);
+
+      if (error.response) {
+        const status = error.response.status;
+        const fbError = error.response.data?.error;
+
+        switch (status) {
+          case 400:
+            return {
+              exists: false,
+              error: 'Bad Request - Invalid catalog ID format or parameters',
+              errorCode: 'BAD_REQUEST',
+            };
+
+          case 401:
+            return {
+              exists: false,
+              error: 'Unauthorized - Invalid or expired access token',
+              errorCode: 'UNAUTHORIZED',
+            };
+
+          case 403:
+            return {
+              exists: false,
+              error:
+                'Forbidden - You do not have permission to access this catalog',
+              errorCode: 'FORBIDDEN',
+            };
+
+          case 404:
+            return {
+              exists: false,
+              error: 'Catalog not found - The specified catalog does not exist',
+              errorCode: 'NOT_FOUND',
+            };
+
+          case 429:
+            return {
+              exists: false,
+              error: 'Rate limit exceeded - Too many requests',
+              errorCode: 'RATE_LIMIT',
+            };
+
+          default:
+            return {
+              exists: false,
+              error: fbError?.message || `HTTP Error: ${status}`,
+              errorCode: 'UNKNOWN_ERROR',
+            };
+        }
+      }
+
+      if (error.code === 'ECONNABORTED') {
+        return {
+          exists: false,
+          error: 'Request timeout - Facebook API did not respond in time',
+          errorCode: 'TIMEOUT',
+        };
+      }
+
+      if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        return {
+          exists: false,
+          error: 'Network error - Cannot connect to Facebook API',
+          errorCode: 'NETWORK_ERROR',
+        };
+      }
+
+      return {
+        exists: false,
+        error: 'Unexpected error occurred',
+        errorCode: 'UNKNOWN_ERROR',
+      };
+    }
+  }
+  async checkProductExistsByRetailerId(
     catalogId: string,
     retailerId: string,
     accessToken: string,
@@ -419,11 +620,11 @@ export class MetaCatalogService {
 
         const products = response.data?.data || [];
 
-        // البحث عن المنتج في هذه الصفحة
         const foundProduct = products.find(
           (product) => product.retailer_id === retailerId,
         );
-
+        console.log(products);
+        console.log(foundProduct);
         if (foundProduct) {
           return {
             exists: true,
@@ -431,7 +632,6 @@ export class MetaCatalogService {
           };
         }
 
-        // الانتقال للصفحة التالية إذا كانت موجودة
         nextPage = response.data?.paging?.next || null;
       } while (nextPage);
 
@@ -471,28 +671,108 @@ export class MetaCatalogService {
     }
   }
 
-  async updateProduct(
+  async checkProductExistsByProductId(
     productId: string,
-    productData: Partial<CreateProductDto>,
     accessToken: string,
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ exists: boolean; product?: any; error?: string }> {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         `${this.baseUrl}/${this.version}/${productId}`,
-        productData,
         {
           params: {
             access_token: accessToken,
+            fields: 'id,retailer_id,name,price,availability',
+          },
+        },
+      );
+
+      console.log('Product found:', response.data);
+
+      return {
+        exists: true,
+        product: response.data,
+      };
+    } catch (error) {
+      console.log('Error checking product:', error.response?.data);
+
+      if (error.response?.status === 404) {
+        return {
+          exists: false,
+          error: 'المنتج غير موجود',
+        };
+      }
+
+      let errorMessage = 'خطأ غير محدد';
+
+      if (error.response) {
+        const status = error.response.status;
+        const fbError = error.response.data?.error;
+
+        switch (status) {
+          case 400:
+            errorMessage = 'معاملات خاطئة في الطلب';
+            break;
+          case 401:
+            errorMessage = 'مشكلة في الصلاحيات أو Access Token';
+            break;
+          case 403:
+            errorMessage = 'ليس لديك صلاحية للوصول لهذا المنتج';
+            break;
+          default:
+            errorMessage = fbError?.message || `خطأ HTTP: ${status}`;
+        }
+      }
+
+      return {
+        exists: false,
+        error: errorMessage,
+      };
+    }
+  }
+  async updateProduct(
+    productId: string,
+    productData: UpdateProductDto,
+    accessToken: string,
+  ): Promise<{ success: boolean }> {
+    try {
+      const updatePayload: any = { ...productData };
+
+      if (updatePayload.price !== undefined) {
+        updatePayload.price = this.convertPriceToFacebookFormat(
+          updatePayload.price,
+        );
+      }
+
+      const response = await axios.post(
+        `${this.baseUrl}/${this.version}/${productId}`,
+        updatePayload,
+        {
+          params: {
+            access_token: accessToken,
+          },
+          headers: {
+            'Content-Type': 'application/json',
           },
         },
       );
 
       return response.data;
     } catch (error) {
+      console.error('Update product error:', error.response?.data);
       throw new BadRequestDomainException(
         `Failed to update product: ${error.response?.data?.error?.message || error.message}`,
       );
     }
+  }
+
+  private convertPriceToFacebookFormat(price: number): string {
+    if (typeof price !== 'number' || isNaN(price) || price < 0) {
+      throw new BadRequestDomainException(`Invalid price: ${price}`);
+    }
+
+    const priceInCents = Math.round(price * 100);
+
+    return priceInCents.toString();
   }
 
   async deleteProduct(
