@@ -3,10 +3,15 @@ import { TenantRepository } from '../../domain/repositories/tenant.repository';
 import { TenantEntity } from '../../domain/entities/tenant.entity';
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
+import { EventBusService } from 'src/shared/infrastructure/events/event-bus.service';
+import { CreateAuditLogEvent } from 'src/modules/logs/domain/events/create-audit-log.event';
 
 @Injectable()
 export class TenantService {
-  constructor(private readonly tenantRepository: TenantRepository) {}
+  constructor(
+    private readonly tenantRepository: TenantRepository,
+    private readonly eventBus: EventBusService,
+  ) {}
 
   async createTenant(
     name: string,
@@ -31,7 +36,27 @@ export class TenantService {
       isActive: true,
     });
     const createdTenant = await this.tenantRepository.create(tenant);
-     return createdTenant;
+
+    this.eventBus.publishEvent(
+      new CreateAuditLogEvent(
+        'CREATE',
+        'TENANTS',
+        new Date(),
+        createdTenant.id,
+        '',
+        {
+          name: createdTenant.name,
+          email: createdTenant.email,
+          defaultLanguage: createdTenant.defaultLanguage,
+          defaultCurrency: createdTenant.defaultCurrency,
+          timezone: createdTenant.timezone,
+          isActive: createdTenant.isActive,
+          description: `Tenant ${createdTenant.name} created`,
+        },
+      ),
+      'create-audit-log',
+    );
+    return createdTenant;
   }
 
   async getTenantById(id: string): Promise<TenantEntity> {
@@ -64,14 +89,42 @@ export class TenantService {
       throw new NotFoundDomainException(`Tenant ${id} not found`);
     }
 
+    this.eventBus.publishEvent(
+      new CreateAuditLogEvent(
+        'UPDATE',
+        'TENANTS',
+        new Date(),
+        updatedTenant.id,
+        '',
+        {
+          description: `Tenant ${updatedTenant.name} updated`,
+        },
+      ),
+      'create-audit-log',
+    );
     return updatedTenant;
   }
 
   async activateTenant(id: string): Promise<TenantEntity> {
-    return await this.updateTenant(id, { isActive: true });
+    const res = await this.updateTenant(id, { isActive: true });
+
+    this.eventBus.publishEvent(
+      new CreateAuditLogEvent('UPDATE', 'TENANTS', new Date(), res.id, '', {
+        description: `Tenant ${res.name} activated`,
+      }),
+      'create-audit-log',
+    );
+    return res;
   }
 
   async deactivateTenant(id: string): Promise<TenantEntity> {
-    return await this.updateTenant(id, { isActive: false });
+    const res = await this.updateTenant(id, { isActive: false });
+    this.eventBus.publishEvent(
+      new CreateAuditLogEvent('UPDATE', 'TENANTS', new Date(), res.id, '', {
+        description: `Tenant ${res.name} deactivated`,
+      }),
+      'create-audit-log',
+    );
+    return res;
   }
 }

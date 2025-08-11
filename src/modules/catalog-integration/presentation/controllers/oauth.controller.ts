@@ -32,14 +32,16 @@ import { MetaOAuthService } from '../../infrastructure/external-services/meta/me
 import { AuthUrlResponseDto } from '../responses/auth-url.response';
 import { BadRequestDomainException } from 'src/shared/domain/exceptions/bad-request-domain.exception';
 import { FastifyReply, FastifyRequest } from 'fastify';
- import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
+import { GoogleMerchantService } from '../../infrastructure/external-services/google/google-merchant.service';
 import { GenerateAuthUrlUseCase } from '../../application/use-cases/auth/generate-auth-url.use-case';
 import { GetMerchantAccountsUseCase } from '../../application/use-cases/google/get-merchant-accounts.use-case';
 import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case';
- import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
+import { TestConnectionUseCase } from '../../application/use-cases/auth/test-connection.use-case';
 import appConfig from 'src/shared/infrastructure/config/app.config';
 import { ConfigType } from '@nestjs/config';
 import { repl } from '@nestjs/core';
+import { EventBusService } from 'src/shared/infrastructure/events/event-bus.service';
+import { CreateAuditLogEvent } from 'src/modules/logs/domain/events/create-audit-log.event';
 
 @ApiTags('OAuth Authentication')
 @Controller('oauth')
@@ -48,9 +50,10 @@ export class OAuthController {
     private readonly getAuthUrlUseCase: GenerateAuthUrlUseCase,
     private readonly getGoogleMerchantAccountsUseCase: GetMerchantAccountsUseCase,
     private readonly handleOAuthCallbackUseCase: HandleOAuthCallbackUseCase,
-     private readonly testConnectionUseCase: TestConnectionUseCase,
+    private readonly testConnectionUseCase: TestConnectionUseCase,
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   @Get('auth-url/:platform')
@@ -169,6 +172,4 @@ export class OAuthController {
       accountInfo: result.details,
     };
   }
-
- 
 }

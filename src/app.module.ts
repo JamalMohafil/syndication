@@ -9,6 +9,7 @@ import { ProductFeedModule } from './modules/product-feed/product-feed.module';
 import { SharedModule } from './shared/shared.module';
 import { CatalogIntegrationModule } from './modules/catalog-integration/catalog-integration.module';
 import { AppController } from './app.controller';
+import { AuditLogModule } from './modules/logs/audit-log.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
     CatalogIntegrationModule,
     ProductFeedModule,
     // FeedSyncJobModule,
+    AuditLogModule,
   ],
   controllers: [AppController],
   providers: [],
