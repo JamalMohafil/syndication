@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { ProductFeedService } from '../../application/services/product-feed.service';
 import { Logger } from '@nestjs/common';
+import { FileType } from '../../domain/enums/file-type.enum';
 
 @Processor('feed-sync')
 export class FeedSyncProcessor extends WorkerHost {
@@ -11,12 +12,19 @@ export class FeedSyncProcessor extends WorkerHost {
   }
   async process(job: Job): Promise<any> {
     try {
-      // const res = await this.productFeedService.generateDemoFeed(
-      //   job.data.tenantId,
-      //   job.data.fileType,
-      // );
-      // console.log(res);
-      console.log(`Feed sync job completed`);
+      if (job.name === 'sync-products') {
+        console.log('Syncing products for tenant', job.data.tenantId);
+        const feed = await this.productFeedService.generateDemoFeed(
+          '6895b7665ef3504be0ef5b8f',
+          FileType.CSV,
+        );
+        if (!feed) {
+          this.logger.log('No products to sync');
+          return;
+        }
+        console.log(feed);
+        console.log(`Feed sync job completed`);
+      }
     } catch (e) {
       throw e;
     }

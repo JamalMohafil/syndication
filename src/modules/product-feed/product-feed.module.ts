@@ -37,7 +37,6 @@ import { FeedSyncScheduler } from './infrastructure/schedulers/feed-sync.schedul
   ],
   exports: [
     ProductFeedService,
-    FeedSyncProcessor,
     FeedSyncScheduler,
     FeedBuilderService,
     ProductFeedRepository,

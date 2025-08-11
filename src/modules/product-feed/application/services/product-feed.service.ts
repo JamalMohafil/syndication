@@ -12,24 +12,16 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 @Injectable()
-export class ProductFeedService implements OnModuleInit {
+export class ProductFeedService {
   constructor(
     private readonly productFeedRepository: ProductFeedRepository,
     private readonly feedBuilderService: FeedBuilderService,
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
-    @InjectQueue('feed-sync') private readonly queue: Queue,
   ) {}
 
-  async onModuleInit() {
-    await this.queue.add(
-      '',
-      {},
-      {
-        attempts: 1,
-        removeOnComplete: true,
-      },
-    );
+  async createFeed(feed: ProductFeedEntity): Promise<ProductFeedEntity> {
+    return this.productFeedRepository.create(feed);
   }
 
   async generateDemoFeed(
