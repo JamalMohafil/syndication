@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ProductFeedRepository } from '../../domain/repositories/product-feed.repository';
 import { ProductFeedEntity } from '../../domain/entities/product-feed.entity';
 import { FeedBuilderService } from './feed-builder.service';
@@ -8,15 +8,29 @@ import * as fs from 'fs';
 import * as path from 'path';
 import appConfig from 'src/shared/infrastructure/config/app.config';
 import { ConfigType } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
-export class ProductFeedService {
+export class ProductFeedService implements OnModuleInit {
   constructor(
     private readonly productFeedRepository: ProductFeedRepository,
     private readonly feedBuilderService: FeedBuilderService,
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
+    @InjectQueue('feed-sync') private readonly queue: Queue,
   ) {}
+
+  async onModuleInit() {
+    await this.queue.add(
+      '',
+      {},
+      {
+        attempts: 1,
+        removeOnComplete: true,
+      },
+    );
+  }
 
   async generateDemoFeed(
     tenantId: string,

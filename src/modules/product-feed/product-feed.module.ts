@@ -11,22 +11,36 @@ import {
   ProductFeedSchema,
 } from './infrastructure/schemas/product-feed.schema';
 import { ProductFeedRepository } from './domain/repositories/product-feed.repository';
+import { FeedSyncProcessor } from './infrastructure/processors/feed-sync.procesoor';
+import { BullModule } from '@nestjs/bullmq';
+import { FeedSyncScheduler } from './infrastructure/schedulers/feed-sync.scheduler';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ProductFeedName, schema: ProductFeedSchema },
     ]),
+    BullModule.registerQueue({
+      name: 'feed-sync',
+    }),
   ],
   controllers: [ProductFeedController, FeedUrlController],
   providers: [
     ProductFeedService,
     FeedBuilderService,
+    FeedSyncScheduler,
+    FeedSyncProcessor,
     {
       provide: ProductFeedRepository,
       useClass: ProductFeedMongoRepository,
     },
   ],
-  exports: [ProductFeedService, FeedBuilderService, ProductFeedRepository],
+  exports: [
+    ProductFeedService,
+    FeedSyncProcessor,
+    FeedSyncScheduler,
+    FeedBuilderService,
+    ProductFeedRepository,
+  ],
 })
 export class ProductFeedModule {}

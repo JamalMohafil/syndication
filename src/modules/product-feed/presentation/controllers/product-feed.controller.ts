@@ -21,11 +21,16 @@ import { FileType } from '../../domain/enums/file-type.enum';
 import { IsString } from 'class-validator';
 import { GenerateDemoFeedDto } from '../dto/generate-demo-feed.dto';
 import { NotFoundDomainException } from 'src/shared/domain/exceptions/not-found-domain.exception';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @ApiTags('Product Feeds')
 @Controller('product-feeds')
 export class ProductFeedController {
-  constructor(private readonly productFeedService: ProductFeedService) {}
+  constructor(
+    private readonly productFeedService: ProductFeedService,
+    @InjectQueue('feed-sync') private readonly queue: Queue,
+  ) {}
 
   @Post('demo')
   @HttpCode(HttpStatus.CREATED)
@@ -37,6 +42,15 @@ export class ProductFeedController {
       generateDto.fileType,
     );
     return feed.toJSON();
+  }
+
+  @Post('manual')
+  async manualSync() {
+    return await this.queue.add(
+      'sync-products',
+      {},
+      { removeOnComplete: true },
+    );
   }
 
   @Get('tenant/:tenantId')
