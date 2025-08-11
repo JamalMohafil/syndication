@@ -11,11 +11,11 @@ export class FeedSyncProcessor extends WorkerHost {
   }
   async process(job: Job): Promise<any> {
     try {
-      const res = await this.productFeedService.generateDemoFeed(
-        job.data.tenantId,
-        job.data.fileType,
-      );
-      console.log(res);
+      // const res = await this.productFeedService.generateDemoFeed(
+      //   job.data.tenantId,
+      //   job.data.fileType,
+      // );
+      // console.log(res);
       console.log(`Feed sync job completed`);
     } catch (e) {
       throw e;
