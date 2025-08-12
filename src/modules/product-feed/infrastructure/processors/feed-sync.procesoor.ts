@@ -18,6 +18,7 @@ export class FeedSyncProcessor extends WorkerHost {
           '6895b7665ef3504be0ef5b8f',
           FileType.CSV,
         );
+        // هون بس منخليه يستدعي منتجات العملاء ومنعملهم مزامنة
         if (!feed) {
           this.logger.log('No products to sync');
           return;
